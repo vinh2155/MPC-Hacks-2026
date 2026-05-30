@@ -89,34 +89,38 @@ Health check: `GET http://localhost:3001/api/health` → `{ status: "ok" }`
 
 Debug endpoint (created with data layer): `GET /api/debug/transactions?limit=5`
 
-## Planned File Structure
+## File Structure
+
+Implemented files are listed without annotation. Planned-but-not-yet-created files are marked `[planned]`.
 
 ```
 backend/src/
-  index.ts              — Express app entry, mounts all routers
+  index.ts              — Express app entry; currently only mounts /api/health and /api/debug/transactions
+                          Feature routes are NOT yet wired — add routers here as routes/ files are created
   db/index.ts           — SQLite init, loads xlsx, exports db instance
   lib/claude.ts         — askClaude<T> wrapper with Zod + retry
-  lib/config.ts         — constants (TOTAL_BUDGET = 50000, etc.)
-  routes/
-    budget.ts           — GET /api/budget/summary
-    chat.ts             — POST /api/chat
-    compliance.ts       — POST /api/compliance/scan, GET /api/compliance/score
-    requests.ts         — CRUD + POST /api/requests/:id/recommendation
-    reports.ts          — POST /api/reports/period, POST /api/reports/employee
-    employees.ts        — GET /api/employees
+  lib/config.ts         — [planned] constants (TOTAL_BUDGET = 50000, etc.)
+  routes/               — [planned] all feature routers go here
+    budget.ts           — [planned] GET /api/budget/summary
+    chat.ts             — [planned] POST /api/chat
+    compliance.ts       — [planned] POST /api/compliance/scan, GET /api/compliance/score
+    requests.ts         — [planned] CRUD + POST /api/requests/:id/recommendation
+    reports.ts          — [planned] POST /api/reports/period, POST /api/reports/employee
+    employees.ts        — [planned] GET /api/employees
 
 frontend/src/
   main.tsx
-  App.tsx               — role toggle, tab routing
-  context/RoleContext.tsx
-  context/BudgetContext.tsx  — shared refetch signal for budget gauge
-  pages/
+  App.tsx               — role toggle (defaults to manager), tab routing
+  context/RoleContext.tsx — useRole() hook, RoleProvider; default role = 'manager'
+  context/BudgetContext.tsx — [planned] shared refetch signal for budget gauge
+  pages/                — all 6 page stubs exist, currently render placeholder divs
     ChatPage.tsx
     CompliancePage.tsx
     ApprovalsPage.tsx
     ReportsPage.tsx
     EmployeeRequestPage.tsx
-  components/
+    BudgetPage.tsx
+  components/           — [planned]
     BudgetGauge.tsx     — animated fill bar, polls /api/budget/summary every 5s
     CategoryPieChart.tsx
 ```
