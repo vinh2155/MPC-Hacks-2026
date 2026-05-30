@@ -1,4 +1,4 @@
-# SpendSense — Product Requirements Document
+# Brianna — Product Requirements Document
 
 **Hackathon:** Brim Financial x MPC Hacks  
 **Challenge:** AI-Powered Expense Intelligence for SMBs  
@@ -8,7 +8,7 @@
 
 ## Overview
 
-SpendSense is a finance intelligence dashboard that lets SMB finance managers understand, police, and act on company spending through natural language — powered by Claude AI reasoning over real transaction data.
+Brianna is a finance intelligence dashboard that lets SMB finance managers understand, police, and act on company spending through natural language — powered by Claude over real transaction data.
 
 **Input data:** 6 months of anonymized SMB transactions (~50 employees, multiple departments) + Brim's expense policy document.
 
@@ -28,8 +28,8 @@ SpendSense is a finance intelligence dashboard that lets SMB finance managers un
 
 - **Frontend:** React + Vite + TypeScript, Recharts
 - **Backend:** Node.js + Express + TypeScript
-- **AI:** Claude API (`claude-sonnet-4-6`) via multi-step reasoning chains
-- **Data:** Excel file parsed into in-memory store at server startup
+- **AI:** Claude (Anthropic) via multi-step reasoning chains
+- **Data:** Excel file parsed into SQLite in-memory DB at server startup (`better-sqlite3`, `Database(':memory:')`)
 - **Validation:** Zod on every Claude JSON response
 
 ---
@@ -45,8 +45,8 @@ Finance managers ask plain-English questions about transaction data and receive 
 - As a finance manager, I ask "How does that compare to Engineering?" and get an updated comparison without re-explaining context.
 
 **AI Chain (4 steps)**
-1. **Intent extraction** — parse query into structured filters (department, date range, category, metric)
-2. **Data query** — JS filter/aggregate over in-memory transaction store (not Claude)
+1. **Intent extraction** — Claude parses query into structured filters (department, date range, category, metric)
+2. **Data query** — Claude generates SQL → backend executes against SQLite in-memory DB → returns rows
 3. **Contextual analysis** — Claude generates 2–3 sentence insight from results
 4. **Visualization + format** — Claude selects chart type and returns final JSON
 
@@ -166,7 +166,7 @@ Cluster transactions by: same employee + date proximity (within 5 days) + same c
 - **Latency:** Chat responses <8s; compliance scan <30s for 1,000 transactions
 - **Security:** API key never exposed to frontend; all Claude calls proxied through Express
 - **Reliability:** Zod validation on every Claude JSON response; retry once on parse failure; structured error returned on second failure
-- **Data:** Excel parsed to in-memory store at startup; no database required
+- **Data:** Excel parsed into SQLite in-memory DB at startup (`better-sqlite3`); Claude generates SQL for all queries; no persistent database required
 
 ---
 
@@ -187,5 +187,5 @@ Cluster transactions by: same employee + date proximity (within 5 days) + same c
 |---|---|
 | Required features (/6) | All 4 built with real AI reasoning, not rule matching |
 | Optional + creativity (/6) | Anomaly detection + forecasting; leverage patterns in the actual 6-month dataset |
-| AI depth (/4) | Multi-step chains per feature; Claude reasons about context, not just flags keywords |
+| AI depth (/4) | Multi-step chains per feature; Claude generates SQL + reasons about context, not just flags keywords |
 | UI/UX (/4) | Finance-manager-first: every AI output includes a visualization chosen for the insight, not decoration |
