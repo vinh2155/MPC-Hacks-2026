@@ -19,6 +19,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.get('/api/debug/transactions', (req, res) => {
+  if (process.env.NODE_ENV === 'production') return void res.sendStatus(404);
   const raw = parseInt(String(req.query.limit ?? ''), 10);
   const limit = Math.max(1, Math.min(isNaN(raw) ? 10 : raw, 100));
   const rows = debugStmt.all({ limit });

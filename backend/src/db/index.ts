@@ -33,13 +33,14 @@ db.exec(`
     amount           REAL NOT NULL,
     category         TEXT,
     reason           TEXT,
-    status           TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','denied')),
+    status           TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'denied')),
     created_at       TEXT NOT NULL
   );
 `);
 
-function excelDateToISO(serial: number | null): string | null {
+function excelDateToISO(serial: unknown): string | null {
   if (serial == null || serial === 0) return null;
+  if (typeof serial !== 'number' || !isFinite(serial)) return null;
   return new Date((serial - 25569) * 86400 * 1000).toISOString().split('T')[0];
 }
 
@@ -70,8 +71,8 @@ try {
       transaction_code:        row['Transaction Code'] as number ?? null,
       transaction_description: row['Transaction Description'] as string ?? null,
       transaction_category:    row['Transaction Category'] as number ?? null,
-      posting_date:            excelDateToISO(row['Posting date of transaction'] as number | null),
-      transaction_date:        excelDateToISO(row['Transaction Date'] as number | null),
+      posting_date:            excelDateToISO(row['Posting date of transaction']),
+      transaction_date:        excelDateToISO(row['Transaction Date']),
       merchant_name:           row['Merchant Info DBA Name'] as string ?? null,
       amount:                  row['Transaction Amount'] as number ?? null,
       debit_or_credit:         (typeof row['Debit or Credit'] === 'string' ? row['Debit or Credit'].toLowerCase() : null) || null,
