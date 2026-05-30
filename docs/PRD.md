@@ -2,25 +2,26 @@
 
 **Hackathon:** Brim Financial x MPC Hacks  
 **Challenge:** AI-Powered Expense Intelligence for SMBs  
-**Version:** 1.0 | 2026-05-30
+**Version:** 1.1 | 2026-05-30
 
 ---
 
 ## Overview
 
-Brianna is a finance intelligence dashboard that lets SMB finance managers understand, police, and act on company spending through natural language — powered by Claude over real transaction data.
+Brianna is a manager dashboard that lets a single manager oversee their team's spending, approve purchase requests, monitor budget, and generate reports — powered by Claude over real transaction data. There are two roles: Employee and Manager, switched via a UI toggle (no real auth needed for the prototype).
 
-**Input data:** 6 months of anonymized SMB transactions (~50 employees, multiple departments) + Brim's expense policy document.
+**Input data:** 6 months of anonymized trucking company transactions (~50 employees) + Brim's expense policy document. Transactions include `employee_name` (8–10 rotating fake names) and `category_label` (human-readable labels mapped from MCC codes).
 
 ---
 
-## Users
+## Users & Roles
 
-| Persona | Role | Primary Need |
+| Role | Access | Primary Need |
 |---|---|---|
-| Finance Manager | Day-to-day operator | Fast answers, policy enforcement, report generation |
-| Approver (Manager) | Decision-maker | Clear context to approve/deny without back-and-forth |
-| CFO | Final sign-off | High-level reports, budget health |
+| Employee | Employee view | Submit purchase requests, check request status |
+| Manager | Full dashboard | Approve requests, monitor budget, run reports, query spend data |
+
+**Role switching:** A simple UI toggle in the top nav switches between Employee and Manager views. No authentication required for the prototype. The dashboard reflects a single manager's team — there is no multi-department or multi-manager view.
 
 ---
 
@@ -35,6 +36,22 @@ Brianna is a finance intelligence dashboard that lets SMB finance managers under
 ---
 
 ## Required Features
+
+### F0 — Budget Tracker (Main Dashboard)
+
+The first thing the manager sees when they open the app. A single company-wide budget visual showing total spend vs total budget — displayed as an animated filling bar or gauge. The visual should feel real-time and alive.
+
+**Interactions**
+- Clicking the bar/gauge opens a breakdown view
+- Breakdown shows a pie chart by `category_label` (human-readable, not raw MCC codes)
+- Budget tracker updates in real time when approvals are granted or denied
+
+**Acceptance Criteria**
+- Budget bar/gauge visible on initial load with no further action
+- Category breakdown uses `category_label` values (e.g. Fuel, Meals, Vehicle Maintenance — not 5541, 5812, 7538)
+- Budget total updates immediately after manager approves or denies a request
+
+---
 
 ### F1 — Natural Language Chat
 
@@ -105,47 +122,58 @@ Automatically scan all transactions against Brim's expense policy. Flag violatio
 
 ---
 
-### F3 — AI Pre-Approval Workflow
+### F3 — Employee Request Flow & Pre-Approval
 
-When a transaction exceeds the approval threshold, notify the approver with full context and a Claude-generated recommendation. One reply closes the loop.
+Two-sided workflow: employees submit purchase requests; the manager reviews them with full AI context and approves or denies in one click.
 
-**Trigger:** Any transaction flagged by compliance engine OR exceeding $500 (configurable per department)
+**Employee view**
+- Simple form: employee name, item description, amount, category, reason
+- After submission: pending status screen showing request state
 
-**Approval Request includes:**
-- Transaction details
-- Employee's spend history (last 30 days)
-- Department budget utilization %
-- Claude recommendation: `approve` | `deny` | `escalate` + reasoning paragraph
+**Manager view (Approvals Inbox)**
+Each pending request displays:
+- Employee name, amount, category, reason
+- Employee's recent spend history
+- Current budget impact if approved
+- Claude-generated approve / deny / escalate recommendation with reasoning paragraph
 
 **Example Claude output:**
-> "Sarah from Marketing is requesting $1,200 for a conference registration. Her department has $3,400 remaining in Q2 budget. She attended 2 conferences this year. **Recommendation: Approve** — within policy, aligns with past pattern."
+> "Jordan is requesting $340 for vehicle maintenance. Their spend this month is $1,100 against a $2,000 budget. This is a routine category for this team. **Recommendation: Approve** — within policy and budget."
+
+**Trigger (legacy):** Any transaction flagged by compliance engine OR exceeding $500 also routes to this inbox.
 
 **Acceptance Criteria**
-- Approver can one-click approve or deny with optional comment
-- Status (pending / approved / denied) reflected in compliance dashboard
-- Threshold configurable per department
+- Manager can one-click approve or deny; decision is final
+- Approved/denied status reflected in compliance dashboard and budget tracker immediately
+- Budget tracker updates in real time after each decision
 
 ---
 
-### F4 — Automated Expense Report Generation
+### F4 — Reports Tab
 
-Group related transactions by employee/trip, attach policy check results, and produce a CFO-ready report.
+Manager selects a report type and Claude generates a plain-English document. Two report types:
 
-**Grouping Logic**
-Cluster transactions by: same employee + date proximity (within 5 days) + same cost center/category
+**Option 1 — Period Report**
+Manager selects weekly or monthly. Claude generates an executive memo covering:
+- Total spend vs budget (budget utilization required)
+- Top spending categories
+- Notable transactions
+- Policy violations flagged
+- Requests approved and denied
+- Budget health summary
 
-**Report includes:**
-- Per-employee summary
-- Per-trip/project breakdown with all transactions
-- Inline policy violations
-- Claude-generated CFO narrative (2–3 sentences)
-
-**Example:** Sarah's San Diego conference → 10 transactions auto-grouped into one report, each tagged with category, policy status, and linked to the approval decision.
+**Option 2 — Employee Report**
+Manager selects an employee from a dropdown. Claude generates a full spend profile:
+- Total spend for the selected period
+- Spending breakdown by category
+- All requests and their outcomes (approved / denied)
+- Any policy flags
+- Comparison to team average
 
 **Acceptance Criteria**
 - Report generation completes in <15s for 500 transactions
 - Downloadable as JSON (MVP)
-- CFO narrative generated by Claude summarizing spend, compliance, and any concerns
+- Both report types include Claude-generated plain-English narrative
 
 ---
 
@@ -166,13 +194,13 @@ Cluster transactions by: same employee + date proximity (within 5 days) + same c
 - **Latency:** Chat responses <8s; compliance scan <30s for 1,000 transactions
 - **Security:** API key never exposed to frontend; all Claude calls proxied through Express
 - **Reliability:** Zod validation on every Claude JSON response; retry once on parse failure; structured error returned on second failure
-- **Data:** Excel parsed into SQLite in-memory DB at startup (`better-sqlite3`); Claude generates SQL for all queries; no persistent database required
+- **Data:** Excel parsed into SQLite in-memory DB at startup (`better-sqlite3`); Claude generates SQL for all queries; no persistent database required. Required columns: `employee_name` (8–10 rotating fake names), `category_label` (MCC → human-readable: 5541→Fuel, 9399→Government Permits, 7538→Vehicle Maintenance, 5812→Meals, 5046→Parts & Supplies)
 
 ---
 
 ## Out of Scope
 
-- User authentication
+- Real user authentication (UI role toggle between Employee / Manager is in scope)
 - Persistent database
 - Real email/Slack notifications (UI toast only)
 - Mobile responsive design
