@@ -137,7 +137,7 @@ Return JSON: { "sql": "SELECT ..." }`,
 
     let rows: unknown[];
     try {
-      rows = db.prepare(sql).all({});
+      rows = db.prepare(sql).all();
     } catch (sqlErr) {
       return void res.status(400).json({ error: 'SQL execution failed', details: String(sqlErr) });
     }
@@ -169,11 +169,21 @@ Visualization type guide:
 - "table": listing individual transactions or records
 - "number": a single key metric (e.g. total spend)
 
-followUpSuggestions: exactly 3 natural follow-up questions the manager might ask next.
-metadata.dateRange: describe the date coverage of the results (e.g. "Jan–May 2025" or "all time").
-metadata.confidence: "high" if data directly answers the question, "medium" if approximate, "low" if inferred.`,
+Return JSON with ALL of these fields:
+- answer: a friendly 1-2 sentence response to the user's question
+- visualization.type: one of bar/pie/line/table/number
+- visualization.title: a short descriptive chart title
+- visualization.data: array of data objects for the chart (e.g. [{ label: "Fuel", value: 1234 }])
+- visualization.config: chart config object (use {} if no special config needed)
+- followUpSuggestions: array of EXACTLY 3 follow-up questions the manager might ask
+- metadata.rowsAnalyzed: ${rows.length}
+- metadata.dateRange: describe the date coverage (e.g. "Jan–May 2025" or "all time")
+- metadata.confidence: "high" if data directly answers the question, "medium" if approximate, "low" if inferred`,
       VisualizationSchema,
     );
+
+    // Always use the real row count, not Claude's potentially-wrong echo
+    response.metadata.rowsAnalyzed = rows.length;
 
     res.json(response);
   } catch (err) {
