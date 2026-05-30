@@ -93,38 +93,33 @@ Debug endpoint (created with data layer): `GET /api/debug/transactions?limit=5`
 
 ## File Structure
 
-Implemented:
+Implemented files are listed without annotation. Planned-but-not-yet-created files are marked `[planned]`.
+
 ```
 backend/src/
-  index.ts              — Express entry; health + debug routes inline (feature routes not yet split out)
+  index.ts              — Express entry; mounts /api/budget, /api/health, /api/debug/transactions
+                          Add new routers here as routes/ files are created
   db/index.ts           — SQLite init, loads xlsx, exports db instance
   lib/claude.ts         — askClaude<T> wrapper with Zod + retry
-  lib/config.ts         — TOTAL_BUDGET = 50_000
+  lib/config.ts         — TOTAL_BUDGET = 50_000 (sole export)
+  routes/
+    budget.ts           — GET /api/budget/summary (txn spend + approved requests)
+    chat.ts             — [planned] POST /api/chat
+    compliance.ts       — [planned] POST /api/compliance/scan, GET /api/compliance/score
+    requests.ts         — [planned] CRUD + POST /api/requests/:id/recommendation
+    reports.ts          — [planned] POST /api/reports/period, POST /api/reports/employee
+    employees.ts        — [planned] GET /api/employees
 
 frontend/src/
   main.tsx
-  App.tsx               — role toggle, tab routing; wraps app in BudgetProvider
-  context/RoleContext.tsx
+  App.tsx               — role toggle (defaults to manager), tab routing; wraps app in BudgetProvider
+  context/RoleContext.tsx — useRole() hook, RoleProvider; default role = 'manager'
   context/BudgetContext.tsx — polls /api/budget/summary every 5s; exposes data/error/refetch
-  lib/format.ts         — fmt(n) currency formatter
-  components/BudgetGauge.tsx
+  lib/format.ts         — fmt(n) shared currency formatter
   pages/                — BudgetPage, ChatPage, CompliancePage, ApprovalsPage, ReportsPage, EmployeeRequestPage
-```
-
-Still to add:
-```
-backend/src/
-  routes/
-    budget.ts           — GET /api/budget/summary
-    chat.ts             — POST /api/chat
-    compliance.ts       — POST /api/compliance/scan, GET /api/compliance/score
-    requests.ts         — CRUD + POST /api/requests/:id/recommendation
-    reports.ts          — POST /api/reports/period, POST /api/reports/employee
-    employees.ts        — GET /api/employees
-
-frontend/src/
   components/
-    CategoryPieChart.tsx
+    BudgetGauge.tsx     — animated fill bar + category breakdown modal; consumes BudgetContext
+    CategoryPieChart.tsx — [planned]
 ```
 
 ## API Routes
