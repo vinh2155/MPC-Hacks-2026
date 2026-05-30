@@ -1,13 +1,16 @@
- import 'dotenv/config';
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { db } from './db';
+import budgetRouter from './routes/budget';
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
 
 app.use(cors());
 app.use(express.json());
+
+app.use('/api/budget', budgetRouter);
 
 const debugStmt = db.prepare('SELECT * FROM transactions LIMIT :limit');
 
