@@ -59,8 +59,8 @@ export async function askClaude<T>(
   schema: z.ZodType<T>,
   options?: AskClaudeOptions,
 ): Promise<T> {
-  const model = options?.model ?? 'claude-opus-4-6';
-  const maxTokens = options?.maxTokens ?? 1024;
+  const model = options?.model ?? 'claude-sonnet-4-6';
+  const maxTokens = options?.maxTokens ?? 4096;
   const systemPrompt = options?.systemSuffix
     ? `${BASE_SYSTEM_PROMPT}\n${options.systemSuffix}`
     : BASE_SYSTEM_PROMPT;

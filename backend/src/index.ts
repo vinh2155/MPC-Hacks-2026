@@ -9,13 +9,16 @@ const PORT = process.env.PORT ?? 3001;
 app.use(cors());
 app.use(express.json());
 
+const debugStmt = db.prepare('SELECT * FROM transactions LIMIT :limit');
+
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
 app.get('/api/debug/transactions', (req, res) => {
-  const limit = Math.min(Number(req.query.limit) || 10, 100);
-  const rows = db.prepare('SELECT * FROM transactions LIMIT :limit').all({ limit });
+  const raw = parseInt(String(req.query.limit ?? ''), 10);
+  const limit = Math.max(1, Math.min(isNaN(raw) ? 10 : raw, 100));
+  const rows = debugStmt.all({ limit });
   res.json(rows);
 });
 

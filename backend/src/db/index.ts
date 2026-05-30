@@ -1,9 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 import * as XLSX from 'xlsx';
 import * as path from 'path';
-import { v4 as uuidv4 } from 'uuid';
-
-export { uuidv4 };
 
 const DATA_PATH = path.resolve(__dirname, '../../../data/transactions.xlsx');
 
@@ -36,7 +33,7 @@ db.exec(`
     amount           REAL NOT NULL,
     category         TEXT,
     reason           TEXT,
-    status           TEXT NOT NULL DEFAULT 'pending',
+    status           TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','denied')),
     created_at       TEXT NOT NULL
   );
 `);
@@ -77,7 +74,7 @@ try {
       transaction_date:        excelDateToISO(row['Transaction Date'] as number | null),
       merchant_name:           row['Merchant Info DBA Name'] as string ?? null,
       amount:                  row['Transaction Amount'] as number ?? null,
-      debit_or_credit:         row['Debit or Credit'] as string ?? null,
+      debit_or_credit:         (typeof row['Debit or Credit'] === 'string' ? row['Debit or Credit'].toLowerCase() : null) || null,
       merchant_category_code:  row['Merchant Category Code'] as number ?? null,
       merchant_city:           row['Merchant City'] as string ?? null,
       merchant_country:        row['Merchant Country'] as string ?? null,

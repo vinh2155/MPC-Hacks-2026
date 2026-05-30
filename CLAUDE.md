@@ -72,7 +72,7 @@ All Claude calls are server-side only — never from the frontend. Use `claude-s
 Every Claude response returning structured data is validated with **Zod**. Retry once on parse failure; return a structured error on second failure.
 
 Reusable wrapper: `backend/src/lib/claude.ts` (implemented):
-- `askClaude<T>(prompt, schema, options?)` — `options: { model?, maxTokens?, systemSuffix? }`. Defaults: `claude-opus-4-6`, 1024 tokens. `systemSuffix` appends to the base "respond with valid JSON" system prompt.
+- `askClaude<T>(prompt, schema, options?)` — `options: { model?, maxTokens?, systemSuffix? }`. Defaults: `claude-sonnet-4-6`, 4096 tokens. `systemSuffix` appends to the base "respond with valid JSON" system prompt.
 - `ClaudeError = { error: string; raw: string }` — thrown on second parse failure. Route handlers should catch this type and return an HTTP error.
 
 ### Frontend tech
