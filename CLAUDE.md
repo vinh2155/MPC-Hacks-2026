@@ -49,20 +49,19 @@ Every Claude response returning structured data is validated with **Zod**. Retry
 
 ## Commands
 
-> Commands will be confirmed once the project is scaffolded. Expected structure:
-
 ```bash
-# Backend
+# Backend (scaffolded — backend/src/index.ts is the entry point)
 cd backend
 npm install
 cp .env.example .env   # add ANTHROPIC_API_KEY
-npm run dev            # start Express server
-npm run build          # compile TypeScript
+npm run dev            # ts-node + nodemon, watches src/ (port 3001)
+npm run build          # compile TypeScript to dist/
+npm start              # run compiled dist/index.js
 
-# Frontend
+# Frontend (not yet scaffolded — see docs/issues_backlog.md Issue #2)
 cd frontend
 npm install
-npm run dev            # start Vite dev server (http://localhost:5173)
+npm run dev            # Vite dev server (http://localhost:5173)
 npm run build
 npm run lint
 
