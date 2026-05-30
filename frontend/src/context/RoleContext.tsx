@@ -1,4 +1,4 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, type ReactNode } from 'react'
 
 type Role = 'employee' | 'manager'
 
@@ -9,7 +9,7 @@ interface RoleContextValue {
 
 const RoleContext = createContext<RoleContextValue | null>(null)
 
-export function RoleProvider({ children }: { children: React.ReactNode }) {
+export function RoleProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<Role>('manager')
   const toggleRole = () => setRole(r => (r === 'manager' ? 'employee' : 'manager'))
   return <RoleContext.Provider value={{ role, toggleRole }}>{children}</RoleContext.Provider>
