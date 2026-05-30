@@ -95,13 +95,13 @@ Implemented files are listed without annotation. Planned-but-not-yet-created fil
 
 ```
 backend/src/
-  index.ts              — Express app entry; currently only mounts /api/health and /api/debug/transactions
-                          Feature routes are NOT yet wired — add routers here as routes/ files are created
+  index.ts              — Express app entry; mounts /api/budget, /api/health, /api/debug/transactions
+                          Add new routers here as routes/ files are created
   db/index.ts           — SQLite init, loads xlsx, exports db instance
   lib/claude.ts         — askClaude<T> wrapper with Zod + retry
-  lib/config.ts         — [planned] constants (TOTAL_BUDGET = 50000, etc.)
-  routes/               — [planned] all feature routers go here
-    budget.ts           — [planned] GET /api/budget/summary
+  lib/config.ts         — TOTAL_BUDGET = 50_000 (sole export)
+  routes/
+    budget.ts           — GET /api/budget/summary (implemented)
     chat.ts             — [planned] POST /api/chat
     compliance.ts       — [planned] POST /api/compliance/scan, GET /api/compliance/score
     requests.ts         — [planned] CRUD + POST /api/requests/:id/recommendation
