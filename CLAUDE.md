@@ -58,7 +58,6 @@ npm install
 cp .env.example .env   # add ANTHROPIC_API_KEY
 npm run dev            # start Express server
 npm run build          # compile TypeScript
-npm run lint
 
 # Frontend
 cd frontend
@@ -74,6 +73,6 @@ python data/process_data.py   # regenerate transactions.xlsx from raw source
 ## Key Decisions
 
 - **Claude over Gemini** — better structured JSON output and tool use reliability
-- **`node:sqlite` (built-in) over `better-sqlite3`** — Node v24 ships `node:sqlite` natively; no native compilation needed. Import: `import { DatabaseSync } from 'node:sqlite'`. Use `new DatabaseSync(':memory:')` for in-memory DB. Synchronous API — no async complexity.
+- **`node:sqlite` (built-in) over `better-sqlite3`** — Node v24 ships `node:sqlite` natively; no native compilation needed. Import: `import { DatabaseSync } from 'node:sqlite'`. Use `new DatabaseSync(':memory:')` for in-memory DB. Synchronous API — no async complexity. **Requires Node >=22. Still marked experimental in Node v24** — API is stable enough for this project but may change between Node minor releases.
 - **No persistent database** — data reloads from `transactions.xlsx` on each server start; `requests` table is session-only (demo context)
 - **Role toggle, not auth** — `useState` in React switches between Employee and Manager views; no sessions or passwords
