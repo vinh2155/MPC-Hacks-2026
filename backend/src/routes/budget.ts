@@ -25,18 +25,23 @@ const byCategoryStmt = db.prepare(`
   ORDER BY amount DESC
 `);
 
-router.get('/summary', (_req, res) => {
-  const txnTotal = (txnSpendStmt.get({}) as { total: number }).total;
-  const reqTotal = (approvedRequestsStmt.get({}) as { total: number }).total;
-  const totalSpend = txnTotal + reqTotal;
-  const byCategory = byCategoryStmt.all({}) as { label: string; amount: number }[];
+router.get('/summary', (_req, res, next) => {
+  try {
+    const txnTotal = Number((txnSpendStmt.get({}) as { total: unknown }).total ?? 0);
+    const reqTotal = Number((approvedRequestsStmt.get({}) as { total: unknown }).total ?? 0);
+    const totalSpend = parseFloat((txnTotal + reqTotal).toFixed(2));
+    const byCategory = (byCategoryStmt.all({}) as { label: string; amount: number }[])
+      .map(r => ({ label: r.label, amount: parseFloat(r.amount.toFixed(2)) }));
 
-  res.json({
-    totalSpend,
-    totalBudget: TOTAL_BUDGET,
-    utilizationPct: parseFloat(((totalSpend / TOTAL_BUDGET) * 100).toFixed(1)),
-    byCategory,
-  });
+    res.json({
+      totalSpend,
+      totalBudget: TOTAL_BUDGET,
+      utilizationPct: parseFloat(((totalSpend / TOTAL_BUDGET) * 100).toFixed(1)),
+      byCategory,
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;
