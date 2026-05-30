@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { RoleProvider, useRole } from './context/RoleContext'
+import { BudgetProvider } from './context/BudgetContext'
 import BudgetPage from './pages/BudgetPage'
 import ChatPage from './pages/ChatPage'
 import CompliancePage from './pages/CompliancePage'
@@ -84,7 +85,9 @@ function AppShell() {
 export default function App() {
   return (
     <RoleProvider>
-      <AppShell />
+      <BudgetProvider>
+        <AppShell />
+      </BudgetProvider>
     </RoleProvider>
   )
 }
