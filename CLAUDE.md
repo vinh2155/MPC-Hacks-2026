@@ -46,7 +46,17 @@ All Claude calls are server-side only — never from the frontend. Each feature 
 - **F3 (Request Flow):** employee submits form → Claude generates approve/deny/escalate recommendation with reasoning → manager one-click decision → budget updates in real time
 - **F4 (Reports):** Period Report (weekly/monthly exec memo) or Employee Report (spend profile vs team average)
 
-Every Claude response returning structured data is validated with **Zod**. Retry once on parse failure; return a structured error on second failure. Reusable wrapper: `backend/src/lib/claude.ts` exports `askClaude<T>(prompt, schema, options?)`.
+Every Claude response returning structured data is validated with **Zod**. Retry once on parse failure; return a structured error on second failure.
+
+Reusable wrapper: `backend/src/lib/claude.ts` (implemented):
+- `askClaude<T>(prompt, schema, options?)` — `options: { model?, maxTokens?, systemSuffix? }`. Defaults: `claude-opus-4-6`, 1024 tokens. `systemSuffix` appends to the base "respond with valid JSON" system prompt.
+- `ClaudeError = { error: string; raw: string }` — thrown on second parse failure. Route handlers should catch this type and return an HTTP error.
+
+### Frontend tech
+
+- **Tailwind v4**: no `tailwind.config.js`. Plugin loaded via `@tailwindcss/vite` in `vite.config.ts`. Only entry needed in `src/index.css`: `@import "tailwindcss"`.
+- **ESLint**: type-aware (`tseslint.configs.recommendedTypeChecked`). `parserOptions.project: true` in `eslint.config.js` — running `npm run lint` requires a valid `tsconfig.app.json`.
+- **Vite proxy**: all `/api/*` requests forwarded to `http://localhost:3001` — no CORS headers needed on the backend in dev.
 
 ### Security
 
