@@ -15,6 +15,12 @@ const ViolationSchema = z.object({
   severity: z.enum(['critical', 'high', 'medium', 'low']),
   reasoning: z.string(),
   is_repeat_offender: z.boolean(),
+  related_transactions: z.array(z.object({
+    transaction_code: z.number().nullable(),
+    amount: z.number(),
+    date: z.string(),
+    merchant: z.string(),
+  })).optional(),
 });
 const BatchResponseSchema = z.object({ violations: z.array(ViolationSchema) });
 type Violation = z.infer<typeof ViolationSchema>;
@@ -48,6 +54,7 @@ interface PreauthRow {
 
 interface SplitChargeRow {
   code1: number | null;
+  code2: number | null;
   employee_name: string | null;
   merchant_name: string | null;
   amount1: number | null;
@@ -96,6 +103,7 @@ const preauthStmt = db.prepare(`
 // Split-charge detection scoped to the same 30-day window
 const splitChargeStmt = db.prepare(`
   SELECT t1.transaction_code AS code1,
+         t2.transaction_code AS code2,
          t1.employee_name,
          t1.merchant_name,
          t1.amount AS amount1,
@@ -273,6 +281,10 @@ router.post('/scan', async (_req, res, next) => {
         severity: 'high',
         reasoning: `Potential split charge: $${(sc.amount1 ?? 0).toFixed(2)} at ${sc.merchant_name} on ${sc.date1} and $${(sc.amount2 ?? 0).toFixed(2)} on ${sc.date2} (same employee, same merchant, within 48h, amounts within 10%).`,
         is_repeat_offender: false,
+        related_transactions: [
+          { transaction_code: sc.code1, amount: sc.amount1 ?? 0, date: sc.date1 ?? '', merchant: sc.merchant_name ?? '' },
+          { transaction_code: sc.code2, amount: sc.amount2 ?? 0, date: sc.date2 ?? '', merchant: sc.merchant_name ?? '' },
+        ],
       });
     }
 

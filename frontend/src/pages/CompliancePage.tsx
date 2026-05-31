@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useCompliance } from '../context/ComplianceContext'
+import { fmtCurrency } from '../lib/format'
 
 interface Violation {
   transaction_code: number | null
@@ -9,6 +10,7 @@ interface Violation {
   severity: 'critical' | 'high' | 'medium' | 'low'
   reasoning: string
   is_repeat_offender: boolean
+  related_transactions?: { transaction_code: number | null; amount: number; date: string; merchant: string }[]
 }
 
 const SEVERITY_BADGE: Record<Violation['severity'], string> = {
@@ -187,12 +189,32 @@ export default function CompliancePage() {
                 </div>
 
                 {/* Violation type */}
-                <p className="text-sm text-gray-800 mb-0.5">
-                  {v.violation_type.replace(/_/g, ' ')}
-                </p>
+                {v.violation_type === 'split_charge' ? (
+                  <span className="inline-block text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 mb-0.5">
+                    ⚑ Split Charge Detected
+                  </span>
+                ) : (
+                  <p className="text-sm text-gray-800 mb-0.5">
+                    {v.violation_type.replace(/_/g, ' ')}
+                  </p>
+                )}
 
                 {/* Policy rule cited */}
                 <p className="text-xs text-gray-500 mb-3">{v.policy_rule_cited}</p>
+
+                {/* Related transactions (split-charge only) */}
+                {v.related_transactions && v.related_transactions.length > 0 && (
+                  <div className="border-l-2 border-amber-300 pl-3 mb-3">
+                    <p className="text-xs text-gray-400 mb-1">Related transactions</p>
+                    {v.related_transactions.map((rt, idx) => (
+                      <div key={rt.transaction_code ?? idx} className="text-xs text-gray-700 flex gap-3">
+                        <span className="font-medium">${fmtCurrency(rt.amount)}</span>
+                        <span>{rt.date}</span>
+                        <span className="text-gray-400">{rt.merchant}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {/* Expand toggle */}
                 <button
