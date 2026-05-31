@@ -5,6 +5,7 @@ interface Violation {
   severity: 'critical' | 'high' | 'medium' | 'low'
   violation_type: string
   policy_rule_cited: string
+  reasoning: string
 }
 
 interface Transaction {
@@ -298,7 +299,7 @@ export default function TransactionsPage() {
                 txns.map((t, i) => {
                   const borderClass = t.violation ? (SEVERITY_BORDER[t.violation.severity] ?? '') : ''
                   return (
-                    <tr key={t.transaction_code ?? i} className={`hover:bg-gray-50 ${borderClass}`} title={t.violation?.policy_rule_cited ?? ''}>
+                    <tr key={t.transaction_code ?? i} className={`hover:bg-gray-50 ${borderClass}`}>
                       <td className="px-4 py-2.5 text-gray-700 whitespace-nowrap">{t.posting_date ?? '—'}</td>
                       <td className="px-4 py-2.5 text-gray-900 font-medium whitespace-nowrap">{t.employee_name ?? '—'}</td>
                       <td className="px-4 py-2.5 text-gray-700 max-w-[180px] truncate" title={t.merchant_name ?? ''}>{t.merchant_name ?? '—'}</td>
@@ -317,9 +318,16 @@ export default function TransactionsPage() {
                       </td>
                       <td className="px-4 py-2.5 whitespace-nowrap">
                         {t.violation ? (
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${SEVERITY_COLORS[t.violation.severity] ?? ''}`}>
-                            {t.violation.severity}
-                          </span>
+                          <div className="relative inline-block group">
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full cursor-default ${SEVERITY_COLORS[t.violation.severity] ?? ''}`}>
+                              {t.violation.severity}
+                            </span>
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 rounded-md bg-gray-900 px-3 py-2 text-xs text-white shadow-lg hidden group-hover:block z-50 whitespace-normal pointer-events-none">
+                              <p className="font-semibold mb-1">{t.violation.violation_type.replace(/_/g, ' ')}</p>
+                              <p className="text-gray-300">{t.violation.reasoning}</p>
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+                            </div>
+                          </div>
                         ) : (
                           <span className="text-gray-300">—</span>
                         )}

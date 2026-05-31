@@ -78,7 +78,7 @@ router.get('/', (req, res) => {
 
   // Build violation map from last scan
   const violations = getLastScanViolations();
-  const violationMap = new Map<number, { severity: string; violation_type: string; policy_rule_cited: string }>();
+  const violationMap = new Map<number, { severity: string; violation_type: string; policy_rule_cited: string; reasoning: string }>();
   for (const v of violations) {
     if (v.transaction_code !== null) {
       const existing = violationMap.get(v.transaction_code);
@@ -88,6 +88,7 @@ router.get('/', (req, res) => {
           severity: v.severity,
           violation_type: v.violation_type,
           policy_rule_cited: v.policy_rule_cited,
+          reasoning: v.reasoning,
         });
       }
     }
