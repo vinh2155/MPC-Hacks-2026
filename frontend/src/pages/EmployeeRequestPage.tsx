@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { fmtCurrency } from '../lib/format'
+import type { Request } from '../lib/types'
 
 const EMPLOYEE_NAMES = ['Jordan', 'Maya', 'Tyler', 'Priya', 'Marcus', 'Sofia', 'Ethan', 'Leila']
 
@@ -13,16 +14,7 @@ const CATEGORIES = [
   'Other',
 ]
 
-interface RequestRow {
-  id: string
-  employee_name: string
-  item_description: string
-  amount: number
-  category: string
-  reason: string
-  status: 'pending' | 'approved' | 'denied'
-  created_at: string
-}
+type RequestRow = Request
 
 const EMPTY_FORM = {
   employee_name: '',

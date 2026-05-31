@@ -48,7 +48,7 @@ function ManagerView({ activeTab, setActiveTab }: {
         <div className={activeTab !== 'budget' ? 'hidden' : ''}><BudgetPage /></div>
         <div className={activeTab !== 'chat' ? 'hidden' : ''}><ChatPage /></div>
         <div className={activeTab !== 'compliance' ? 'hidden' : ''}><CompliancePage /></div>
-        <div className={activeTab !== 'approvals' ? 'hidden' : ''}><ApprovalsPage /></div>
+        {activeTab === 'approvals' && <ApprovalsPage />}
         <div className={activeTab !== 'reports' ? 'hidden' : ''}><ReportsPage /></div>
       </main>
     </>

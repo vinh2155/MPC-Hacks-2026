@@ -114,7 +114,7 @@ backend/src/
     chat.ts             — POST /api/chat (4-step AI chain)
     compliance.ts       — POST /api/compliance/scan (SQL-only: pre-auth >$50 + split-charge detection), GET /api/compliance/score
     requests.ts         — POST /api/requests, GET /api/requests, GET /api/requests/:id, PATCH /api/requests/:id (status update)
-    reports.ts          — [planned] POST /api/reports/period, POST /api/reports/employee
+    reports.ts          — POST /api/reports/period (SQL gathers 6 data points, Claude generates 6-section exec memo; returns { period, generatedAt, narrative, data }); POST /api/reports/employee [planned]
     employees.ts        — [planned] GET /api/employees
 
 frontend/src/
@@ -126,9 +126,9 @@ frontend/src/
   lib/format.ts         — fmt(n) whole-dollar formatter (drops cents); fmtCurrency(n) cent-accurate formatter (2dp); pctOf(amount, total) percentage helper
   pages/
     BudgetPage.tsx          — renders BudgetGauge
-    ChatPage.tsx            — [stub] Issue #9/#10
+    ChatPage.tsx            — AI chat interface: message thread, 5 viz types (bar/pie/line/table/number), follow-up chips, typing indicator, empty state; sends to /api/chat, history capped at 10
     CompliancePage.tsx      — Run Scan button, violations list (severity badges, repeat offender badge, expandable reasoning), client-side filters (severity + employee), 20-per-page pagination
-    ApprovalsPage.tsx       — [stub] Issue #14/#15
+    ApprovalsPage.tsx       — pending requests with auto-fetched AI recommendation chips (approve/deny/escalate), budget impact per card, Approve/Deny buttons; resolved section below
     ReportsPage.tsx         — [stub] Issue #16/#17/#18
     EmployeeRequestPage.tsx — request form (employee name + item + amount + category + reason); pending/approved/denied status screen with 5s polling (implemented)
   components/
@@ -152,7 +152,7 @@ Rows marked ✓ are implemented; the rest are planned (no route file yet).
 | ✓ | GET | `/api/requests/:id` | Single request |
 | ✓ | PATCH | `/api/requests/:id` | Update status to approved/denied |
 | ✓ | POST | `/api/requests/:id/recommendation` | Claude approve/deny/escalate with reasoning; includes employee 30-day spend + budget context |
-| | POST | `/api/reports/period` | `{ period: "weekly"\|"monthly" }` → exec memo |
+| ✓ | POST | `/api/reports/period` | `{ period: "weekly"\|"monthly" }` → exec memo |
 | | POST | `/api/reports/employee` | `{ employeeName }` → spend profile |
 | | GET | `/api/employees` | List of 8 employee names |
 

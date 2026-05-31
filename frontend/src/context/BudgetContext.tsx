@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
 
 export interface BudgetSummary {
   totalSpend: number
@@ -31,8 +31,11 @@ function isValidSummary(v: unknown): v is BudgetSummary {
 export function BudgetProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<BudgetSummary | null>(null)
   const [error, setError] = useState(false)
+  const fetchingRef = useRef(false)
 
   const fetchSummary = useCallback(async () => {
+    if (fetchingRef.current) return
+    fetchingRef.current = true
     try {
       const res = await fetch('/api/budget/summary')
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -43,6 +46,8 @@ export function BudgetProvider({ children }: { children: ReactNode }) {
     } catch {
       setData(null)
       setError(true)
+    } finally {
+      fetchingRef.current = false
     }
   }, [])
 
