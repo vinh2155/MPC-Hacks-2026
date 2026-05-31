@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { RoleProvider, useRole } from './context/RoleContext'
 import { BudgetProvider } from './context/BudgetContext'
 import BudgetPage from './pages/BudgetPage'
@@ -20,10 +20,34 @@ const MANAGER_TABS: { id: ManagerTab; label: string }[] = [
   { id: 'reports', label: 'Reports' },
 ]
 
+function usePendingCount() {
+  const [count, setCount] = useState(0)
+
+  function poll() {
+    fetch('/api/requests')
+      .then(r => r.ok ? r.json() : [])
+      .then((data: unknown) => {
+        if (Array.isArray(data)) {
+          setCount(data.filter((r: unknown) => (r as { status: string }).status === 'pending').length)
+        }
+      })
+      .catch(() => {})
+  }
+
+  useEffect(() => {
+    poll()
+    const id = setInterval(poll, 10_000)
+    return () => clearInterval(id)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return { count, refetch: poll }
+}
+
 function ManagerView({ activeTab, setActiveTab }: {
   activeTab: ManagerTab
   setActiveTab: (tab: ManagerTab) => void
 }) {
+  const { count: pendingCount, refetch: refetchPending } = usePendingCount()
   return (
     <>
       <nav className="border-b border-gray-200 bg-white">
@@ -33,13 +57,18 @@ function ManagerView({ activeTab, setActiveTab }: {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                className={`relative px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === tab.id
                     ? 'border-blue-600 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
                 {tab.label}
+                {tab.id === 'approvals' && pendingCount > 0 && (
+                  <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">
+                    {pendingCount}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -50,7 +79,7 @@ function ManagerView({ activeTab, setActiveTab }: {
         <div className={activeTab !== 'chat' ? 'hidden' : ''}><ChatPage /></div>
         <div className={activeTab !== 'transactions' ? 'hidden' : ''}><TransactionsPage /></div>
         <div className={activeTab !== 'policy' ? 'hidden' : ''}><PolicyPage /></div>
-        {activeTab === 'approvals' && <ApprovalsPage />}
+        {activeTab === 'approvals' && <ApprovalsPage onDecide={refetchPending} />}
         <div className={activeTab !== 'reports' ? 'hidden' : ''}><ReportsPage /></div>
       </main>
     </>

@@ -40,16 +40,40 @@ interface EmployeeReport {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function downloadJson(data: unknown, filename: string) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+function printReportAsPdf(title: string, subtitle: string, stats: { label: string; value: string }[], narrative: string) {
+  const statsHtml = stats.map(s => `
+    <div style="background:#f9fafb;border-radius:8px;padding:12px 16px;">
+      <div style="font-size:11px;color:#6b7280;margin-bottom:2px;">${s.label}</div>
+      <div style="font-size:18px;font-weight:700;color:#111827;">${s.value}</div>
+    </div>`).join('')
+
+  const narrativeHtml = narrative.split(/\n\n+/).map(p =>
+    `<p style="margin:0 0 14px;color:#374151;font-size:13px;line-height:1.7;">${p.trim()}</p>`
+  ).join('')
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+    <title>${title}</title>
+    <style>
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 40px; color: #111827; }
+      @media print { body { padding: 24px; } }
+    </style>
+  </head><body>
+    <div style="border-bottom:2px solid #e5e7eb;padding-bottom:16px;margin-bottom:24px;">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;margin-bottom:6px;">Brianna · Spend Report</div>
+      <h1 style="margin:0 0 4px;font-size:22px;font-weight:700;">${title}</h1>
+      <div style="font-size:12px;color:#9ca3af;">${subtitle}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;">${statsHtml}</div>
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:0 0 20px;">
+    <div>${narrativeHtml}</div>
+  </body></html>`
+
+  const w = window.open('', '_blank')
+  if (!w) return
+  w.document.write(html)
+  w.document.close()
+  w.focus()
+  setTimeout(() => { w.print(); w.close() }, 300)
 }
 
 function StatsStrip({ stats }: { stats: { label: string; value: string }[] }) {
@@ -275,13 +299,20 @@ export default function ReportsPage() {
               </p>
             </div>
             <button
-              onClick={() => downloadJson(
-                periodReport,
-                `brianna-report-${periodReport.period}-${periodReport.generatedAt.split('T')[0]}.json`,
+              onClick={() => printReportAsPdf(
+                `${periodReport.period === 'weekly' ? 'Weekly' : 'Monthly'} Report`,
+                `Generated ${new Date(periodReport.generatedAt).toLocaleString()}`,
+                [
+                  { label: 'Spend this period', value: `$${fmtCurrency(periodReport.data.totalSpend)}` },
+                  { label: 'All-time utilization', value: `${periodReport.data.allTimeBudgetUtilization}%` },
+                  { label: 'Pre-auth flags', value: String(periodReport.data.preauthCount) },
+                  { label: 'Approved requests', value: String(periodReport.data.approvedCount) },
+                ],
+                periodReport.narrative,
               )}
               className="flex-shrink-0 rounded-md border border-gray-200 px-4 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
             >
-              Download JSON
+              Download PDF
             </button>
           </div>
           <StatsStrip stats={[
@@ -308,13 +339,20 @@ export default function ReportsPage() {
               </p>
             </div>
             <button
-              onClick={() => downloadJson(
-                employeeReport,
-                `brianna-report-${employeeReport.employeeName.toLowerCase()}-${employeeReport.generatedAt.split('T')[0]}.json`,
+              onClick={() => printReportAsPdf(
+                `${employeeReport.employeeName} — Spend Profile`,
+                `Generated ${new Date(employeeReport.generatedAt).toLocaleString()}`,
+                [
+                  { label: 'Total spend', value: `$${fmtCurrency(employeeReport.data.totalSpend)}` },
+                  { label: 'Team average', value: `$${fmtCurrency(employeeReport.data.teamAverageSpend)}` },
+                  { label: 'Pre-auth flags', value: String(employeeReport.data.preauthCount) },
+                  { label: 'Requests submitted', value: String(employeeReport.data.requests.length) },
+                ],
+                employeeReport.narrative,
               )}
               className="flex-shrink-0 rounded-md border border-gray-200 px-4 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
             >
-              Download JSON
+              Download PDF
             </button>
           </div>
           <StatsStrip stats={[

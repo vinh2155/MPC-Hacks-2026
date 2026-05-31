@@ -31,7 +31,7 @@ const RESOLVED_BADGE: Record<'approved' | 'denied', string> = {
 
 // ── ApprovalsPage ─────────────────────────────────────────────────────────────
 
-export default function ApprovalsPage() {
+export default function ApprovalsPage({ onDecide }: { onDecide?: () => void }) {
   const { data: budgetData, refetch } = useBudget()
 
   const [requests, setRequests] = useState<Request[]>([])
@@ -89,6 +89,7 @@ export default function ApprovalsPage() {
       const updated = await res.json() as Request
       setRequests(prev => prev.map(r => r.id === id ? updated : r))
       refetch()
+      onDecide?.()
     } catch (err) {
       // C1: surface the failure inline so manager knows the action didn't save
       setDecideErrors(prev => ({
