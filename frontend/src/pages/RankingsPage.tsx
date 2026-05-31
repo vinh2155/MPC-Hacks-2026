@@ -196,7 +196,7 @@ export default function RankingsPage() {
                       >
                         #{emp.rank}
                       </div>
-                    );})()
+                    );})()}
 
                     {/* Score badge */}
                     <div
