@@ -131,7 +131,7 @@ frontend/src/
 | GET | `/api/budget/summary` | Total spend, budget, utilization %, by-category |
 | POST | `/api/chat` | 4-step AI chain: `{ message, history }` |
 | POST | `/api/compliance/scan` | Batch policy scan, returns violations array |
-| GET | `/api/compliance/score` | `{ score, totalTransactions, violations }` |
+| GET | `/api/compliance/score` | `{ score, totalTransactions, violationCount }` |
 | POST | `/api/requests` | Submit employee request, returns `{ id }` |
 | GET | `/api/requests` | All requests, newest first |
 | GET | `/api/requests/:id` | Single request |

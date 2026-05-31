@@ -211,7 +211,13 @@ router.post('/scan', async (_req, res, next) => {
 
     // Use explicit MAX aggregation rather than relying on sort order
     const maxDateRow = maxDateStmt.get({}) as unknown as { max_date: string | null };
-    const maxDate = maxDateRow.max_date ?? new Date().toISOString().split('T')[0];
+    if (maxDateRow.max_date === null) {
+      lastScanTxnCount = 0;
+      lastScanViolations = [];
+      res.json({ violations: [] });
+      return;
+    }
+    const maxDate = maxDateRow.max_date;
     const maxDateObj = new Date(maxDate + 'T00:00:00Z');
     maxDateObj.setUTCDate(maxDateObj.getUTCDate() - 30);
     const sinceDate = maxDateObj.toISOString().split('T')[0];
@@ -304,10 +310,13 @@ router.get('/score', (_req, res) => {
   const score =
     lastScanTxnCount === 0
       ? 100
-      : Math.max(
-          0,
-          Math.round(
-            ((lastScanTxnCount - lastScanViolations.length) / lastScanTxnCount) * 100,
+      : Math.min(
+          100,
+          Math.max(
+            0,
+            Math.round(
+              ((lastScanTxnCount - lastScanViolations.length) / lastScanTxnCount) * 100,
+            ),
           ),
         );
   res.json({ score, totalTransactions: lastScanTxnCount, violationCount: lastScanViolations.length });
