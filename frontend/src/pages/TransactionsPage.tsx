@@ -46,6 +46,11 @@ const SEVERITY_BORDER: Record<string, string> = {
   low: 'border-l-4 border-l-blue-400',
 }
 
+function SortIcon({ col, sortBy, sortDir }: { col: SortCol; sortBy: SortCol; sortDir: SortDir }) {
+  if (sortBy !== col) return <span className="ml-1 text-gray-300">↕</span>
+  return <span className="ml-1">{sortDir === 'desc' ? '↓' : '↑'}</span>
+}
+
 export default function TransactionsPage() {
   const [data, setData] = useState<TxnResponse | null>(null)
   const [loading, setLoading] = useState(false)
@@ -148,11 +153,6 @@ export default function TransactionsPage() {
       setSortBy(col)
       setSortDir('desc')
     }
-  }
-
-  function SortIcon({ col }: { col: SortCol }) {
-    if (sortBy !== col) return <span className="ml-1 text-gray-300">↕</span>
-    return <span className="ml-1">{sortDir === 'desc' ? '↓' : '↑'}</span>
   }
 
   const txns = data?.transactions ?? []
@@ -261,33 +261,33 @@ export default function TransactionsPage() {
                   onClick={() => toggleSort('posting_date')}
                   className="px-4 py-3 text-left font-medium text-gray-600 cursor-pointer hover:text-gray-900 whitespace-nowrap"
                 >
-                  Date <SortIcon col="posting_date" />
+                  Date <SortIcon col="posting_date" sortBy={sortBy} sortDir={sortDir} />
                 </th>
                 <th
                   onClick={() => toggleSort('employee_name')}
                   className="px-4 py-3 text-left font-medium text-gray-600 cursor-pointer hover:text-gray-900 whitespace-nowrap"
                 >
-                  Employee <SortIcon col="employee_name" />
+                  Employee <SortIcon col="employee_name" sortBy={sortBy} sortDir={sortDir} />
                 </th>
                 <th
                   onClick={() => toggleSort('merchant_name')}
                   className="px-4 py-3 text-left font-medium text-gray-600 cursor-pointer hover:text-gray-900 whitespace-nowrap"
                 >
-                  Merchant <SortIcon col="merchant_name" />
+                  Merchant <SortIcon col="merchant_name" sortBy={sortBy} sortDir={sortDir} />
                 </th>
                 <th className="px-4 py-3 text-left font-medium text-gray-600 whitespace-nowrap">Category</th>
                 <th
                   onClick={() => toggleSort('amount')}
                   className="px-4 py-3 text-right font-medium text-gray-600 cursor-pointer hover:text-gray-900 whitespace-nowrap"
                 >
-                  Amount <SortIcon col="amount" />
+                  Amount <SortIcon col="amount" sortBy={sortBy} sortDir={sortDir} />
                 </th>
                 <th className="px-4 py-3 text-left font-medium text-gray-600 whitespace-nowrap">Type</th>
                 <th
                   onClick={() => toggleSort('severity')}
                   className="px-4 py-3 text-left font-medium text-gray-600 cursor-pointer hover:text-gray-900 whitespace-nowrap"
                 >
-                  Violation <SortIcon col="severity" />
+                  Violation <SortIcon col="severity" sortBy={sortBy} sortDir={sortDir} />
                 </th>
               </tr>
             </thead>
