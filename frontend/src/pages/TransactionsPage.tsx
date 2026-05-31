@@ -33,6 +33,8 @@ interface TxnResponse {
 type SortCol = 'posting_date' | 'amount' | 'employee_name' | 'merchant_name' | 'severity'
 type SortDir = 'asc' | 'desc'
 
+interface TooltipState { x: number; y: number; v: Violation }
+
 const SEVERITY_COLORS: Record<string, { bg: string; text: string }> = {
   critical: { bg: 'rgba(245,88,88,0.12)',    text: '#F55858' },
   high:     { bg: 'rgba(255,153,102,0.12)',  text: '#FF9966' },
@@ -83,6 +85,7 @@ export default function TransactionsPage() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
 
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null)
   const [scanVersion, setScanVersion] = useState(0)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -343,32 +346,21 @@ export default function TransactionsPage() {
                       </td>
                       <td className="px-4 py-2.5 whitespace-nowrap">
                         {t.violation ? (
-                          <div className="relative inline-block group">
-                            <span
-                              className="text-xs font-medium px-2 py-0.5 rounded-full cursor-default"
-                              style={{
-                                backgroundColor: SEVERITY_COLORS[t.violation.severity]?.bg ?? 'transparent',
-                                color: SEVERITY_COLORS[t.violation.severity]?.text ?? 'inherit',
-                              }}
-                            >
-                              {t.violation.severity}
-                            </span>
-                            <div
-                              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 rounded-lg px-3 py-2 text-xs shadow-xl hidden group-hover:block z-50 whitespace-normal pointer-events-none"
-                              style={{
-                                backgroundColor: 'var(--bg-elevated)',
-                                border: '1px solid var(--border-default)',
-                                color: 'var(--text-primary)',
-                              }}
-                            >
-                              <p className="font-semibold mb-1">{t.violation.violation_type.replace(/_/g, ' ')}</p>
-                              <p style={{ color: 'var(--text-secondary)' }}>{t.violation.reasoning}</p>
-                              <div
-                                className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent"
-                                style={{ borderTopColor: 'var(--bg-elevated)' }}
-                              />
-                            </div>
-                          </div>
+                          <span
+                            data-violation-badge
+                            className="text-xs font-medium px-2 py-0.5 rounded-full cursor-default"
+                            style={{
+                              backgroundColor: SEVERITY_COLORS[t.violation.severity]?.bg ?? 'transparent',
+                              color: SEVERITY_COLORS[t.violation.severity]?.text ?? 'inherit',
+                            }}
+                            onMouseEnter={e => {
+                              const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                              setTooltip({ x: r.left + r.width / 2, y: r.top, v: t.violation! })
+                            }}
+                            onMouseLeave={() => setTooltip(null)}
+                          >
+                            {t.violation.severity}
+                          </span>
                         ) : (
                           <span style={{ color: 'var(--text-muted)' }}>—</span>
                         )}
@@ -451,6 +443,29 @@ export default function TransactionsPage() {
           </div>
         )}
       </div>
+
+      {/* Fixed-position tooltip — escapes overflow clipping on all rows */}
+      {tooltip && (
+        <div
+          className="pointer-events-none fixed z-50 w-80 rounded-lg px-3 py-2.5 text-xs shadow-xl"
+          style={{
+            left: tooltip.x,
+            top: tooltip.y,
+            transform: 'translate(-50%, calc(-100% - 10px))',
+            backgroundColor: 'var(--bg-elevated)',
+            border: '1px solid var(--border-default)',
+            color: 'var(--text-primary)',
+          }}
+        >
+          <p className="font-semibold mb-1 capitalize">{tooltip.v.violation_type.replace(/_/g, ' ')}</p>
+          <p className="leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{tooltip.v.reasoning}</p>
+          <p className="mt-1.5 italic" style={{ color: 'var(--text-muted)' }}>{tooltip.v.policy_rule_cited}</p>
+          <div
+            className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent"
+            style={{ borderTopColor: 'var(--bg-elevated)' }}
+          />
+        </div>
+      )}
     </div>
   )
 }
