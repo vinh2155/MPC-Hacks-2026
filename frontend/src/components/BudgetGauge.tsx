@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { useBudget } from '../context/BudgetContext'
-import { fmt } from '../lib/format'
+import { fmt, pctOf } from '../lib/format'
 
 const PIE_COLORS = [
   '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6',
   '#06b6d4', '#f97316', '#ec4899', '#6366f1',
+  '#14b8a6',
 ]
 
 function barColorClass(pct: number) {
@@ -62,6 +63,13 @@ export default function BudgetGauge() {
 
   const pct = data.utilizationPct
   const status = statusLabel(pct)
+
+  const topCats = data.byCategory.slice(0, 8)
+  const otherAmount = Math.max(0, data.byCategory.slice(8).reduce((s, c) => s + c.amount, 0))
+  const pieData = data.byCategory.length > 8
+    ? [...topCats, { label: 'Other', amount: otherAmount }]
+    : topCats
+  const categoryTotal = pieData.reduce((s, c) => s + c.amount, 0)
 
   return (
     <>
@@ -152,14 +160,14 @@ export default function BudgetGauge() {
               </button>
             </div>
 
-            {data.byCategory.length === 0 ? (
+            {pieData.length === 0 ? (
               <p className="text-sm text-gray-400 text-center py-8">No transactions yet</p>
             ) : (
               <>
                 <ResponsiveContainer width="100%" height={240}>
                   <PieChart>
                     <Pie
-                      data={data.byCategory}
+                      data={pieData}
                       dataKey="amount"
                       nameKey="label"
                       cx="50%"
@@ -168,12 +176,12 @@ export default function BudgetGauge() {
                       outerRadius={100}
                       paddingAngle={2}
                     >
-                      {data.byCategory.map((_, i) => (
+                      {pieData.map((_, i) => (
                         <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(v: number) => [`$${fmt(v)}`, '']}
+                      formatter={(v: number) => [`$${fmt(v)} (${pctOf(v, categoryTotal)}%)`, '']}
                       contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '12px' }}
                     />
                     <Legend
@@ -185,7 +193,7 @@ export default function BudgetGauge() {
                 </ResponsiveContainer>
 
                 <ul className="mt-4 space-y-2 max-h-48 overflow-y-auto">
-                  {data.byCategory.map((cat, i) => (
+                  {pieData.map((cat, i) => (
                     <li key={i} className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
                         <span
@@ -196,9 +204,7 @@ export default function BudgetGauge() {
                       </div>
                       <div className="flex items-center gap-3 text-right">
                         <span className="text-gray-400 text-xs">
-                          {data.totalSpend > 0
-                            ? ((cat.amount / data.totalSpend) * 100).toFixed(1)
-                            : '0.0'}%
+                          {pctOf(cat.amount, categoryTotal)}%
                         </span>
                         <span className="font-semibold text-gray-900 tabular-nums w-20">
                           ${fmt(cat.amount)}

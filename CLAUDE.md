@@ -116,31 +116,38 @@ frontend/src/
   App.tsx               — role toggle (defaults to manager), tab routing; wraps app in BudgetProvider
   context/RoleContext.tsx — useRole() hook, RoleProvider; default role = 'manager'
   context/BudgetContext.tsx — polls /api/budget/summary every 5s; exposes data/error/refetch
-  lib/format.ts         — fmt(n) shared currency formatter
-  pages/                — BudgetPage, ChatPage, CompliancePage, ApprovalsPage, ReportsPage, EmployeeRequestPage
+  lib/format.ts         — fmt(n) currency formatter; pctOf(amount, total) percentage helper
+  pages/
+    BudgetPage.tsx          — renders BudgetGauge
+    ChatPage.tsx            — [stub] Issue #9/#10
+    CompliancePage.tsx      — [stub] Issue #11/#12
+    ApprovalsPage.tsx       — [stub] Issue #14/#15
+    ReportsPage.tsx         — [stub] Issue #16/#17/#18
+    EmployeeRequestPage.tsx — [stub] Issue #13
   components/
-    BudgetGauge.tsx     — animated fill bar + category breakdown modal; consumes BudgetContext
-    CategoryPieChart.tsx — [planned]
+    BudgetGauge.tsx     — animated fill bar + category breakdown modal (pie chart inline, top-8 + Other grouping); consumes BudgetContext
 ```
 
 ## API Routes
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/health` | Health check |
-| GET | `/api/budget/summary` | Total spend, budget, utilization %, by-category |
-| POST | `/api/chat` | 4-step AI chain: `{ message, history }` |
-| POST | `/api/compliance/scan` | Batch policy scan, returns violations array |
-| GET | `/api/compliance/score` | `{ score, totalTransactions, violationCount }` |
-| POST | `/api/requests` | Submit employee request, returns `{ id }` |
-| GET | `/api/requests` | All requests, newest first |
-| GET | `/api/requests/:id` | Single request |
-| PATCH | `/api/requests/:id` | Update status to approved/denied |
-| POST | `/api/requests/:id/recommendation` | Claude approve/deny/escalate with reasoning |
-| POST | `/api/reports/period` | `{ period: "weekly"\|"monthly" }` → exec memo |
-| POST | `/api/reports/employee` | `{ employeeName }` → spend profile |
-| GET | `/api/employees` | List of 8 employee names |
-| GET | `/api/debug/transactions` | `?limit=N` — dev only |
+Rows marked ✓ are implemented; the rest are planned (no route file yet).
+
+| | Method | Path | Description |
+|-|--------|------|-------------|
+| ✓ | GET | `/api/health` | Health check |
+| ✓ | GET | `/api/budget/summary` | Total spend, budget, utilization %, by-category |
+| ✓ | GET | `/api/debug/transactions` | `?limit=N` — dev only |
+| ✓ | POST | `/api/chat` | 4-step AI chain: `{ message, history }` |
+| | POST | `/api/compliance/scan` | Batch policy scan, returns violations array |
+| | GET | `/api/compliance/score` | `{ score, totalTransactions, violationCount }` |
+| | POST | `/api/requests` | Submit employee request, returns `{ id }` |
+| | GET | `/api/requests` | All requests, newest first |
+| | GET | `/api/requests/:id` | Single request |
+| | PATCH | `/api/requests/:id` | Update status to approved/denied |
+| | POST | `/api/requests/:id/recommendation` | Claude approve/deny/escalate with reasoning |
+| | POST | `/api/reports/period` | `{ period: "weekly"\|"monthly" }` → exec memo |
+| | POST | `/api/reports/employee` | `{ employeeName }` → spend profile |
+| | GET | `/api/employees` | List of 8 employee names |
 
 ## Key Decisions
 
