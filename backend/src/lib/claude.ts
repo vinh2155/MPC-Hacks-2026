@@ -3,9 +3,7 @@ import { z } from 'zod';
 
 export type ClaudeError = { error: string; raw: string };
 
-const apiKey = process.env.ANTHROPIC_API_KEY;
-if (!apiKey) throw new Error('ANTHROPIC_API_KEY environment variable is not set');
-const anthropic = new Anthropic({ apiKey, timeout: 30_000 });
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?? 'missing', timeout: 30_000 });
 
 const BASE_SYSTEM_PROMPT =
   'You are a JSON API. Always respond with valid JSON that exactly matches ' +

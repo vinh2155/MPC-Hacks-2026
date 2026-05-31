@@ -54,7 +54,7 @@ export default function CategoryPie() {
         <p className="text-sm text-center py-12" style={{ color: 'var(--text-muted)' }}>No transactions yet</p>
       ) : (
         <>
-          <ResponsiveContainer width="100%" height={260}>
+          <ResponsiveContainer width="100%" height={320}>
             <PieChart>
               <Pie
                 data={pieData}
@@ -62,8 +62,8 @@ export default function CategoryPie() {
                 nameKey="label"
                 cx="50%"
                 cy="50%"
-                innerRadius={68}
-                outerRadius={112}
+                innerRadius={82}
+                outerRadius={135}
                 paddingAngle={2}
               >
                 {pieData.map((cat, i) => (

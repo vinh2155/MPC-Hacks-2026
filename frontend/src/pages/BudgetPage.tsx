@@ -8,7 +8,7 @@ export default function BudgetPage() {
         <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Budget Tracker</h2>
         <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Annual spend tracking and year-end forecast.</p>
       </div>
-      <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_520px] gap-6 items-start">
         <BudgetGauge />
         <CategoryPie />
       </div>
