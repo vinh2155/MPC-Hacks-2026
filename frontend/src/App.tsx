@@ -7,9 +7,10 @@ import PolicyPage from './pages/PolicyPage'
 import ApprovalsPage from './pages/ApprovalsPage'
 import ReportsPage from './pages/ReportsPage'
 import TransactionsPage from './pages/TransactionsPage'
+import RankingsPage from './pages/RankingsPage'
 import EmployeeRequestPage from './pages/EmployeeRequestPage'
 
-type ManagerTab = 'budget' | 'chat' | 'policy' | 'approvals' | 'reports' | 'transactions'
+type ManagerTab = 'budget' | 'chat' | 'policy' | 'approvals' | 'reports' | 'transactions' | 'rankings'
 
 const MANAGER_TABS: { id: ManagerTab; label: string }[] = [
   { id: 'chat', label: 'Chat' },
@@ -18,6 +19,7 @@ const MANAGER_TABS: { id: ManagerTab; label: string }[] = [
   { id: 'approvals', label: 'Approvals Inbox' },
   { id: 'reports', label: 'Reports' },
   { id: 'budget', label: 'Budget Tracker' },
+  { id: 'rankings', label: 'Employee Rankings' },
 ]
 
 function usePendingCount() {
@@ -75,12 +77,13 @@ function ManagerView({ activeTab, setActiveTab }: {
         </div>
       </nav>
       <main className="mx-auto max-w-7xl">
-        <div className={activeTab !== 'budget' ? 'hidden' : ''}><BudgetPage /></div>
         <div className={activeTab !== 'chat' ? 'hidden' : ''}><ChatPage /></div>
         <div className={activeTab !== 'transactions' ? 'hidden' : ''}><TransactionsPage /></div>
         <div className={activeTab !== 'policy' ? 'hidden' : ''}><PolicyPage /></div>
         {activeTab === 'approvals' && <ApprovalsPage onDecide={refetchPending} />}
         <div className={activeTab !== 'reports' ? 'hidden' : ''}><ReportsPage /></div>
+        <div className={activeTab !== 'budget' ? 'hidden' : ''}><BudgetPage /></div>
+        <div className={activeTab !== 'rankings' ? 'hidden' : ''}><RankingsPage /></div>
       </main>
     </>
   )

@@ -38,6 +38,7 @@ export default function PolicyPage() {
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const rulesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     return () => { if (toastTimer.current) clearTimeout(toastTimer.current) }
@@ -65,6 +66,7 @@ export default function PolicyPage() {
 
   function addRule() {
     setRules(prev => [...prev, { id: genId(), name: 'New Rule', rule: '' }])
+    setTimeout(() => rulesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50)
   }
 
   function updateLimit(field: keyof PolicyLimits, value: string) {
@@ -218,6 +220,7 @@ export default function PolicyPage() {
               No rules defined. Click "Add Rule" to create one.
             </div>
           )}
+          <div ref={rulesEndRef} />
         </div>
       </section>
 

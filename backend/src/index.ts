@@ -10,6 +10,7 @@ import reportsRouter from './routes/reports';
 import employeesRouter from './routes/employees';
 import policyRouter from './routes/policy';
 import transactionsRouter from './routes/transactions';
+import rankingsRouter from './routes/rankings';
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
@@ -25,6 +26,7 @@ app.use('/api/reports', reportsRouter);
 app.use('/api/employees', employeesRouter);
 app.use('/api/policy', policyRouter);
 app.use('/api/transactions', transactionsRouter);
+app.use('/api/rankings', rankingsRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
