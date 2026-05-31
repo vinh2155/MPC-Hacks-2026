@@ -39,15 +39,6 @@ function IconTransactions() {
   )
 }
 
-function IconCompliance() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M8 1L2 4v4.5A6 6 0 008 15a6 6 0 006-6.5V4L8 1z" />
-      <path d="M5.5 8l1.5 1.5 3-3" />
-    </svg>
-  )
-}
-
 function IconApprovals() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -86,14 +77,13 @@ function IconRankings() {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'budget',       label: 'Budget',       icon: <IconBudget /> },
   { id: 'chat',         label: 'Chat',         icon: <IconChat /> },
   { id: 'transactions', label: 'Transactions', icon: <IconTransactions /> },
-  { id: 'compliance',   label: 'Compliance',   icon: <IconCompliance /> },
+  { id: 'policy',       label: 'Policy',       icon: <IconPolicy /> },
   { id: 'approvals',    label: 'Approvals',    icon: <IconApprovals /> },
   { id: 'reports',      label: 'Reports',      icon: <IconReports /> },
+  { id: 'budget',       label: 'Budget',       icon: <IconBudget /> },
   { id: 'rankings',     label: 'Rankings',     icon: <IconRankings /> },
-  { id: 'policy',       label: 'Policy',       icon: <IconPolicy /> },
 ]
 
 export default function SidebarNav({ activeTab, setActiveTab, pendingCount, onRoleToggle }: Props) {
