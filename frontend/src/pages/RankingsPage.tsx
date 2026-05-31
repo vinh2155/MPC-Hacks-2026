@@ -43,11 +43,11 @@ const SORT_OPTIONS: { value: SortMode; label: string }[] = [
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function scoreStyle(score: number): { bg: string; text: string; ring: string; grade: string } {
-  if (score >= 90) return { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-200', grade: 'A' }
-  if (score >= 75) return { bg: 'bg-blue-50',    text: 'text-blue-700',    ring: 'ring-blue-200',    grade: 'B' }
-  if (score >= 60) return { bg: 'bg-amber-50',   text: 'text-amber-700',   ring: 'ring-amber-200',   grade: 'C' }
-  return              { bg: 'bg-red-50',    text: 'text-red-700',    ring: 'ring-red-200',    grade: 'F' }
+function scoreStyle(score: number) {
+  if (score >= 90) return { bg: 'rgba(52,217,135,0.12)',  text: '#34D987', border: 'rgba(52,217,135,0.25)',  grade: 'A' }
+  if (score >= 75) return { bg: 'rgba(96,165,250,0.12)',  text: '#60A5FA', border: 'rgba(96,165,250,0.25)',  grade: 'B' }
+  if (score >= 60) return { bg: 'rgba(251,191,36,0.12)',  text: '#FBBF24', border: 'rgba(251,191,36,0.25)',  grade: 'C' }
+  return              { bg: 'rgba(245,88,88,0.12)',   text: '#F55858',  border: 'rgba(245,88,88,0.25)',   grade: 'F' }
 }
 
 function rankMedal(rank: number) {
@@ -55,6 +55,17 @@ function rankMedal(rank: number) {
   if (rank === 2) return '🥈'
   if (rank === 3) return '🥉'
   return `#${rank}`
+}
+
+const selectStyle = {
+  borderRadius: '8px',
+  border: '1px solid var(--border-default)',
+  backgroundColor: 'var(--bg-elevated)',
+  color: 'var(--text-primary)',
+  fontSize: '14px',
+  outline: 'none',
+  padding: '8px 12px',
+  minWidth: '160px',
 }
 
 // ── RankingsPage ──────────────────────────────────────────────────────────────
@@ -68,7 +79,6 @@ export default function RankingsPage() {
   const [insights, setInsights]       = useState<Record<string, string> | null>(null)
   const [insightsLoading, setInsightsLoading] = useState(false)
 
-  // Fetch rankings whenever period changes
   useEffect(() => {
     const controller = new AbortController()
     setLoading(true)
@@ -82,7 +92,6 @@ export default function RankingsPage() {
     return () => controller.abort()
   }, [period])
 
-  // Auto-fetch AI insights once rankings data is ready
   useEffect(() => {
     if (!data || data.employees.length === 0) return
     const controller = new AbortController()
@@ -109,36 +118,36 @@ export default function RankingsPage() {
     : []
 
   return (
-    <div className="p-8">
-      <header className="mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">Employee Rankings</h2>
-        <p className="text-sm text-gray-500 mt-1">
+    <div className="p-6 lg:p-8 max-w-4xl">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Employee Rankings</h1>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
           Compliance scores based on spending patterns and policy violations.
         </p>
-      </header>
+      </div>
 
       {/* Controls */}
       <div className="flex items-end gap-4 mb-6 flex-wrap">
         <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+          <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>
             Period
           </label>
           <select
             value={period}
             onChange={e => setPeriod(e.target.value as Period)}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[160px]"
+            style={{ ...selectStyle, minWidth: '160px' }}
           >
             {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+          <label className="block text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--text-muted)' }}>
             Sort By
           </label>
           <select
             value={sort}
             onChange={e => setSort(e.target.value as SortMode)}
-            className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[180px]"
+            style={{ ...selectStyle, minWidth: '180px' }}
           >
             {SORT_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
@@ -147,15 +156,15 @@ export default function RankingsPage() {
 
       {/* Loading */}
       {loading && (
-        <div className="flex items-center gap-3 py-12 text-gray-400 text-sm">
-          <span className="inline-block w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+        <div className="flex items-center gap-3 py-12 text-sm" style={{ color: 'var(--text-muted)' }}>
+          <span className="inline-block w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
           Loading rankings…
         </div>
       )}
 
       {/* Error */}
       {!loading && error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
+        <div className="rounded-lg px-4 py-3 text-sm" style={{ backgroundColor: 'rgba(245,88,88,0.10)', color: '#F55858', border: '1px solid rgba(245,88,88,0.25)' }}>
           {error}
         </div>
       )}
@@ -163,10 +172,9 @@ export default function RankingsPage() {
       {/* Rankings */}
       {!loading && !error && data && (
         <>
-          {/* Team average */}
-          <p className="text-xs text-gray-400 mb-4">
+          <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
             Team average spend this period:{' '}
-            <span className="font-semibold text-gray-600">${fmtCurrency(data.teamAverageSpend)}</span>
+            <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>${fmtCurrency(data.teamAverageSpend)}</span>
           </p>
 
           <div className="space-y-3">
@@ -176,39 +184,42 @@ export default function RankingsPage() {
               return (
                 <div
                   key={emp.name}
-                  className="bg-white rounded-xl border border-gray-100 shadow-sm p-5"
+                  className="rounded-xl p-5"
+                  style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
                 >
-                  {/* Top row: rank · score · name · violations */}
                   <div className="flex items-center gap-5">
-                    {/* Compliance rank medal */}
-                    <div className="flex-shrink-0 w-10 text-center text-lg font-bold text-gray-400 tabular-nums">
+                    {/* Rank medal */}
+                    <div className="flex-shrink-0 w-10 text-center text-lg font-bold tabular-nums" style={{ color: 'var(--text-muted)' }}>
                       {rankMedal(emp.rank)}
                     </div>
 
                     {/* Score badge */}
-                    <div className={`flex-shrink-0 w-16 h-16 rounded-xl flex flex-col items-center justify-center ring-1 ${s.bg} ${s.ring}`}>
-                      <span className={`text-2xl font-black leading-none ${s.text}`}>{s.grade}</span>
-                      <span className={`text-xs font-bold mt-0.5 ${s.text}`}>{emp.score}</span>
+                    <div
+                      className="flex-shrink-0 w-16 h-16 rounded-xl flex flex-col items-center justify-center"
+                      style={{ backgroundColor: s.bg, border: `1px solid ${s.border}` }}
+                    >
+                      <span className="text-2xl font-black leading-none" style={{ color: s.text }}>{s.grade}</span>
+                      <span className="text-xs font-bold mt-0.5" style={{ color: s.text }}>{emp.score}</span>
                     </div>
 
-                    {/* Name + spend */}
+                    {/* Name + stats */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-base font-semibold text-gray-900">{emp.name}</p>
+                      <p className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>{emp.name}</p>
                       <div className="flex flex-wrap gap-x-4 mt-0.5">
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                           Spend:{' '}
-                          <span className="font-medium text-gray-700">${fmtCurrency(emp.totalSpend)}</span>
+                          <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>${fmtCurrency(emp.totalSpend)}</span>
                         </span>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                           Transactions:{' '}
-                          <span className="font-medium text-gray-700">{emp.transactionCount}</span>
+                          <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>{emp.transactionCount}</span>
                         </span>
                         {emp.approvedRequests + emp.deniedRequests > 0 && (
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                             Requests:{' '}
-                            <span className="font-medium text-emerald-600">{emp.approvedRequests} approved</span>
+                            <span className="font-medium" style={{ color: '#34D987' }}>{emp.approvedRequests} approved</span>
                             {emp.deniedRequests > 0 && (
-                              <span className="font-medium text-red-500"> · {emp.deniedRequests} denied</span>
+                              <span className="font-medium" style={{ color: '#F55858' }}> · {emp.deniedRequests} denied</span>
                             )}
                           </span>
                         )}
@@ -218,32 +229,32 @@ export default function RankingsPage() {
                     {/* Violation chips */}
                     <div className="flex-shrink-0 flex items-center gap-2">
                       {emp.preauthViolations > 0 && (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-red-50 text-red-600 ring-1 ring-red-100">
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: 'rgba(245,88,88,0.12)', color: '#F55858', border: '1px solid rgba(245,88,88,0.20)' }}>
                           {emp.preauthViolations} pre-auth
                         </span>
                       )}
                       {emp.splitPairCount > 0 && (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 ring-1 ring-amber-100">
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: 'rgba(251,191,36,0.12)', color: '#FBBF24', border: '1px solid rgba(251,191,36,0.20)' }}>
                           {emp.splitPairCount} split
                         </span>
                       )}
                       {totalViolations === 0 && (
-                        <span className="text-xs font-medium text-emerald-600">No violations</span>
+                        <span className="text-xs font-medium" style={{ color: '#34D987' }}>No violations</span>
                       )}
                     </div>
                   </div>
 
-                  {/* AI insight — shown below once ready */}
+                  {/* AI insight */}
                   {insightsLoading && !insights && (
-                    <div className="mt-3 flex items-center gap-2 text-xs text-indigo-400">
-                      <span className="inline-block w-3 h-3 border-2 border-indigo-300 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                    <div className="mt-3 flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                      <span className="inline-block w-3 h-3 border-2 border-t-transparent rounded-full animate-spin flex-shrink-0" style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }} />
                       Generating AI insight…
                     </div>
                   )}
                   {insights?.[emp.name] && (
-                    <div className="mt-3 flex items-start gap-2 rounded-lg bg-indigo-50 px-3 py-2">
-                      <span className="text-indigo-400 text-xs mt-0.5 flex-shrink-0">✦</span>
-                      <p className="text-xs text-indigo-700 leading-relaxed italic">{insights[emp.name]}</p>
+                    <div className="mt-3 flex items-start gap-2 rounded-lg px-3 py-2" style={{ backgroundColor: 'rgba(99,102,241,0.10)', border: '1px solid rgba(99,102,241,0.20)' }}>
+                      <span className="text-xs mt-0.5 flex-shrink-0" style={{ color: 'var(--accent)' }}>✦</span>
+                      <p className="text-xs leading-relaxed italic" style={{ color: 'var(--text-secondary)' }}>{insights[emp.name]}</p>
                     </div>
                   )}
                 </div>
@@ -253,20 +264,18 @@ export default function RankingsPage() {
 
           {/* Score legend */}
           <div className="mt-8 flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-gray-500 font-semibold mr-1">Score:</span>
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 font-medium">
-              A · 90–100 Excellent
-            </span>
-            <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 ring-1 ring-blue-200 font-medium">
-              B · 75–89 Good
-            </span>
-            <span className="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 ring-1 ring-amber-200 font-medium">
-              C · 60–74 Fair
-            </span>
-            <span className="px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 ring-1 ring-red-200 font-medium">
-              F · 0–59 Poor
-            </span>
-            <span className="ml-2 text-gray-400">
+            <span className="font-semibold mr-1" style={{ color: 'var(--text-muted)' }}>Score:</span>
+            {[
+              { label: 'A · 90–100 Excellent', ...scoreStyle(95) },
+              { label: 'B · 75–89 Good',       ...scoreStyle(80) },
+              { label: 'C · 60–74 Fair',        ...scoreStyle(65) },
+              { label: 'F · 0–59 Poor',         ...scoreStyle(40) },
+            ].map(g => (
+              <span key={g.grade} className="px-2.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: g.bg, color: g.text, border: `1px solid ${g.border}` }}>
+                {g.label}
+              </span>
+            ))}
+            <span className="ml-2" style={{ color: 'var(--text-muted)' }}>
               Deductions: −8 per pre-auth flag · −12 per split-charge pair · −5 per denied request
             </span>
           </div>
