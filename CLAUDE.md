@@ -104,7 +104,7 @@ Implemented files are listed without annotation. Planned-but-not-yet-created fil
 
 ```
 backend/src/
-  index.ts              — Express entry; mounts /api/budget, /api/chat, /api/compliance, /api/requests, /api/health, /api/debug/transactions
+  index.ts              — Express entry; mounts /api/budget, /api/chat, /api/compliance, /api/requests, /api/reports, /api/employees, /api/health, /api/debug/transactions
                           Add new routers here as routes/ files are created
   db/index.ts           — SQLite init, loads xlsx, exports db instance
   lib/claude.ts         — askClaude<T> wrapper with Zod + retry
@@ -131,7 +131,7 @@ frontend/src/
     ChatPage.tsx            — AI chat interface: message thread, 5 viz types (bar/pie/line/table/number), follow-up chips, typing indicator, empty state; sends to /api/chat, history capped at 10
     CompliancePage.tsx      — Run Scan button, violations list (severity badges, repeat offender badge, expandable reasoning), client-side filters (severity + employee), 20-per-page pagination
     ApprovalsPage.tsx       — pending requests with auto-fetched AI recommendation chips (approve/deny/escalate), budget impact per card, Approve/Deny buttons; resolved section below
-    ReportsPage.tsx         — [stub] Issue #16/#17/#18
+    ReportsPage.tsx         — segmented control (Period/Employee); period: weekly/monthly selector → POST /api/reports/period; employee: dropdown from GET /api/employees → POST /api/reports/employee; stats strip + narrative; Download JSON
     EmployeeRequestPage.tsx — request form (employee name + item + amount + category + reason); pending/approved/denied status screen with 5s polling (implemented)
   components/
     BudgetGauge.tsx     — animated fill bar + category breakdown modal (pie chart inline, top-8 + Other grouping); consumes BudgetContext
