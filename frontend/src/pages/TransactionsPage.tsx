@@ -141,6 +141,7 @@ export default function TransactionsPage() {
   }
 
   function toggleSort(col: SortCol) {
+    setPage(1)
     if (sortBy === col) {
       setSortDir(d => d === 'desc' ? 'asc' : 'desc')
     } else {

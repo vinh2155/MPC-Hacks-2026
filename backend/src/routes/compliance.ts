@@ -213,6 +213,27 @@ async function processBatch(
   }
 }
 
+// ── Severity helpers ───────────────────────────────────────────────────────────
+
+// Pre-auth severity scales with how far the amount exceeds the threshold:
+//   < 3x  → low  |  3–10x → medium  |  10–20x → high  |  20x+ → critical
+function preauthSeverity(amount: number, threshold: number): 'critical' | 'high' | 'medium' | 'low' {
+  const ratio = amount / threshold;
+  if (ratio >= 20) return 'critical';
+  if (ratio >= 10) return 'high';
+  if (ratio >= 3)  return 'medium';
+  return 'low';
+}
+
+// Split-charge severity scales with the combined transaction total:
+//   < $200 → medium  |  $200–$1000 → high  |  $1000+ → critical
+function splitChargeSeverity(amount1: number, amount2: number): 'critical' | 'high' | 'medium' {
+  const total = amount1 + amount2;
+  if (total >= 1000) return 'critical';
+  if (total >= 200)  return 'high';
+  return 'medium';
+}
+
 // ── Routes ─────────────────────────────────────────────────────────────────────
 
 router.post('/scan', async (_req, res, next) => {
@@ -269,7 +290,7 @@ router.post('/scan', async (_req, res, next) => {
         employee_name: row.employee_name ?? '',
         violation_type: 'preauth_required',
         policy_rule_cited: `Expenses > $${limits.preauthThreshold} require manager pre-authorization and receipts.`,
-        severity: 'medium',
+        severity: preauthSeverity(row.amount ?? 0, limits.preauthThreshold),
         reasoning: `$${(row.amount ?? 0).toFixed(2)} charge at ${row.merchant_name} (${row.category_label}) on ${row.posting_date} exceeds the $${limits.preauthThreshold} pre-authorization threshold.`,
         is_repeat_offender: false,
       });
@@ -284,7 +305,7 @@ router.post('/scan', async (_req, res, next) => {
         violation_type: 'split_charge',
         policy_rule_cited:
           'Expenses must not be split across multiple transactions to circumvent the pre-authorization threshold.',
-        severity: 'high',
+        severity: splitChargeSeverity(sc.amount1 ?? 0, sc.amount2 ?? 0),
         reasoning: `Potential split charge: $${(sc.amount1 ?? 0).toFixed(2)} at ${sc.merchant_name} on ${sc.date1} and $${(sc.amount2 ?? 0).toFixed(2)} on ${sc.date2} (same employee, same merchant, within ${limits.splitChargeWindowHours}h, amounts within 10%).`,
         is_repeat_offender: false,
         related_transactions: [
