@@ -7,6 +7,7 @@ import chatRouter from './routes/chat';
 import complianceRouter from './routes/compliance';
 import requestsRouter from './routes/requests';
 import reportsRouter from './routes/reports';
+import employeesRouter from './routes/employees';
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
@@ -19,6 +20,7 @@ app.use('/api/chat', chatRouter);
 app.use('/api/compliance', complianceRouter);
 app.use('/api/requests', requestsRouter);
 app.use('/api/reports', reportsRouter);
+app.use('/api/employees', employeesRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });

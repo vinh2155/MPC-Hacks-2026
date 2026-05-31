@@ -87,7 +87,7 @@ Import: `import { DatabaseSync } from 'node:sqlite'`. Synchronous API — no asy
 - **Tailwind v4**: no `tailwind.config.js`. Plugin loaded via `@tailwindcss/vite` in `vite.config.ts`. Only entry needed in `src/index.css`: `@import "tailwindcss"`.
 - **ESLint**: type-aware (`tseslint.configs.recommendedTypeChecked`). `parserOptions.project: true` in `eslint.config.js` — running `npm run lint` requires a valid `tsconfig.app.json`.
 - **Vite proxy**: all `/api/*` requests forwarded to `http://localhost:3001`. The Vite proxy handles CORS in dev; `cors()` middleware is also configured globally on the backend for production.
-- **Tab rendering**: `App.tsx` renders all manager pages simultaneously with `className={activeTab !== 'budget' ? 'hidden' : ''}` — every page is always mounted. Any `useEffect` or API call at the top level of a page component fires immediately on app load, not when the tab is clicked. Use lazy fetching (trigger on user action or check visibility) if a page should only load data when active.
+- **Tab rendering**: `App.tsx` renders most manager pages with `className={activeTab !== 'X' ? 'hidden' : ''}` — those pages are always mounted and any top-level `useEffect` fires immediately on app load, not when the tab is clicked. **Exception:** `ApprovalsPage` uses `{activeTab === 'approvals' && <ApprovalsPage />}` (conditional render, not hidden) to prevent eager Claude API calls at startup. Use conditional render (not hidden) for any page that fires Claude calls on mount.
 - **Recharts**: already installed; `BudgetGauge.tsx` uses `PieChart` with `Pie`, `Cell`, `Tooltip`, `Legend`, `ResponsiveContainer`.
 
 ### Security
@@ -114,8 +114,8 @@ backend/src/
     chat.ts             — POST /api/chat (4-step AI chain)
     compliance.ts       — POST /api/compliance/scan (SQL-only: pre-auth >$50 + split-charge detection), GET /api/compliance/score
     requests.ts         — POST /api/requests, GET /api/requests, GET /api/requests/:id, PATCH /api/requests/:id (status update)
-    reports.ts          — POST /api/reports/period (SQL gathers 6 data points, Claude generates 6-section exec memo; returns { period, generatedAt, narrative, data }); POST /api/reports/employee [planned]
-    employees.ts        — [planned] GET /api/employees
+    reports.ts          — POST /api/reports/period (SQL gathers 6 data points, Claude generates 6-section exec memo; returns { period, generatedAt, narrative, data }); POST /api/reports/employee (all-time spend profile vs team avg of 8, Claude narrative, compliance window last 30 days)
+    employees.ts        — GET /api/employees (DISTINCT employee_name from transactions, sorted)
 
 frontend/src/
   main.tsx
@@ -124,6 +124,8 @@ frontend/src/
   context/BudgetContext.tsx — polls /api/budget/summary every 5s; exposes data/error/refetch
   context/ComplianceContext.tsx — fetches /api/compliance/score on mount; exposes scoreData/refetchScore; used by header chip + CompliancePage
   lib/format.ts         — fmt(n) whole-dollar formatter (drops cents); fmtCurrency(n) cent-accurate formatter (2dp); pctOf(amount, total) percentage helper
+  lib/types.ts          — shared Request interface (status: 'pending'|'approved'|'denied'); import here, never redefine locally
+  lib/chartColors.ts    — CHART_COLORS string array (8 colors); used by BudgetGauge for pie slices
   pages/
     BudgetPage.tsx          — renders BudgetGauge
     ChatPage.tsx            — AI chat interface: message thread, 5 viz types (bar/pie/line/table/number), follow-up chips, typing indicator, empty state; sends to /api/chat, history capped at 10
@@ -153,8 +155,8 @@ Rows marked ✓ are implemented; the rest are planned (no route file yet).
 | ✓ | PATCH | `/api/requests/:id` | Update status to approved/denied |
 | ✓ | POST | `/api/requests/:id/recommendation` | Claude approve/deny/escalate with reasoning; includes employee 30-day spend + budget context |
 | ✓ | POST | `/api/reports/period` | `{ period: "weekly"\|"monthly" }` → exec memo |
-| | POST | `/api/reports/employee` | `{ employeeName }` → spend profile |
-| | GET | `/api/employees` | List of 8 employee names |
+| ✓ | POST | `/api/reports/employee` | `{ employeeName }` → spend profile |
+| ✓ | GET | `/api/employees` | List of 8 employee names |
 
 ## Key Decisions
 
