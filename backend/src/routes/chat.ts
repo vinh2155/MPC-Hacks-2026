@@ -42,9 +42,8 @@ const VisualizationSchema = z.object({
     data: z.array(z.unknown()),
     config: z.record(z.unknown()),
   }),
-  followUpSuggestions: z.array(z.string()).length(3),
+  followUpSuggestions: z.array(z.string()).min(1).max(5),
   metadata: z.object({
-    rowsAnalyzed: z.number(),
     dateRange: z.string(),
     confidence: z.enum(['high', 'medium', 'low']),
   }),
@@ -75,8 +74,8 @@ Notes:
 function isReadOnly(sql: string): boolean {
   const upper = sql.trim().toUpperCase();
   return (
-    upper.startsWith('SELECT') &&
-    !/\b(INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|REPLACE|MERGE)\b/.test(upper)
+    (upper.startsWith('SELECT') || upper.startsWith('WITH')) &&
+    !/\b(INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|TRUNCATE|REPLACE|MERGE|ATTACH|DETACH|PRAGMA|VACUUM)\b/.test(upper)
   );
 }
 
@@ -135,9 +134,14 @@ Return JSON: { "sql": "SELECT ..." }`,
       return void res.status(400).json({ error: 'Generated SQL is not a read-only SELECT' });
     }
 
+    // Enforce row cap server-side in case Claude omits LIMIT
+    const cappedSql = /\bLIMIT\b/i.test(sql)
+      ? sql
+      : `${sql.trimEnd().replace(/;$/, '')} LIMIT 100`;
+
     let rows: unknown[];
     try {
-      rows = db.prepare(sql).all();
+      rows = db.prepare(cappedSql).all();
     } catch (sqlErr) {
       return void res.status(400).json({ error: 'SQL execution failed', details: String(sqlErr) });
     }
@@ -175,17 +179,13 @@ Return JSON with ALL of these fields:
 - visualization.title: a short descriptive chart title
 - visualization.data: array of data objects for the chart (e.g. [{ label: "Fuel", value: 1234 }])
 - visualization.config: chart config object (use {} if no special config needed)
-- followUpSuggestions: array of EXACTLY 3 follow-up questions the manager might ask
-- metadata.rowsAnalyzed: ${rows.length}
+- followUpSuggestions: array of 1–5 follow-up questions the manager might ask next
 - metadata.dateRange: describe the date coverage (e.g. "Jan–May 2025" or "all time")
 - metadata.confidence: "high" if data directly answers the question, "medium" if approximate, "low" if inferred`,
       VisualizationSchema,
     );
 
-    // Always use the real row count, not Claude's potentially-wrong echo
-    response.metadata.rowsAnalyzed = rows.length;
-
-    res.json(response);
+    res.json({ ...response, metadata: { ...response.metadata, rowsAnalyzed: rows.length } });
   } catch (err) {
     const ce = err as ClaudeError;
     if (ce?.error !== undefined && ce?.raw !== undefined) {
