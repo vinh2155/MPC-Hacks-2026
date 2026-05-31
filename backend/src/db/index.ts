@@ -66,9 +66,9 @@ const stmt = db.prepare(`
 
 db.exec('BEGIN');
 try {
-  for (const row of rows) {
+  rows.forEach((row, idx) => {
     stmt.run({
-      transaction_code:        row['Transaction Code'] as number ?? null,
+      transaction_code:        idx + 1,
       transaction_description: row['Transaction Description'] as string ?? null,
       transaction_category:    row['Transaction Category'] as number ?? null,
       posting_date:            excelDateToISO(row['Posting date of transaction']),
@@ -85,7 +85,7 @@ try {
       employee_name:           row['employee_name'] as string ?? null,
       category_label:          row['category_label'] as string ?? null,
     });
-  }
+  });
   db.exec('COMMIT');
 } catch (err) {
   db.exec('ROLLBACK');
