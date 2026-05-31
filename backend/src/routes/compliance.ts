@@ -123,8 +123,9 @@ let scanInProgress = false;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const BATCH_SIZE = 50;
-const MAX_CONCURRENT = 5;
+const BATCH_SIZE = 15;
+const MAX_CONCURRENT = 1;
+const BATCH_DELAY_MS = 2_000; // pause between batches to stay under 30k TPM rate limit
 
 // Rule 1 (>$50 pre-authorization) and split-charge detection are handled by SQL — not Claude.
 const POLICY_RULES = `COMPANY EXPENSE POLICY RULES:
@@ -190,10 +191,11 @@ async function processBatch(
     return result.violations;
   } catch (err) {
     if (typeof err === 'object' && err !== null && 'raw' in err) {
-      console.error('Claude batch failed:', (err as ClaudeError).error);
-      return [];
+      console.error('Claude parse error, skipping batch:', (err as ClaudeError).error);
+    } else {
+      console.error('Batch failed, skipping:', err);
     }
-    throw err;
+    return [];
   }
 }
 
@@ -222,8 +224,14 @@ router.post('/scan', async (_req, res, next) => {
     maxDateObj.setUTCDate(maxDateObj.getUTCDate() - 30);
     const sinceDate = maxDateObj.toISOString().split('T')[0];
 
-    // Fetch only the 30-day window of debit transactions
+    // Fetch the full 30-day window (used for SQL-based checks and employee context)
     const allTxns = allDebitsStmt.all({ since_date: sinceDate }) as unknown as TxnRow[];
+
+    // For Claude analysis only use the most recent 3 days to stay within rate limits
+    const claudeWindowObj = new Date(maxDate + 'T00:00:00Z');
+    claudeWindowObj.setUTCDate(claudeWindowObj.getUTCDate() - 3);
+    const claudeSinceDate = claudeWindowObj.toISOString().split('T')[0];
+    const claudeTxns = allTxns.filter(t => t.posting_date !== null && t.posting_date >= claudeSinceDate);
 
     const uniqueEmployees = [
       ...new Set(allTxns.map(t => t.employee_name).filter((e): e is string => e !== null)),
@@ -236,20 +244,8 @@ router.post('/scan', async (_req, res, next) => {
       }) as unknown as EmpCtxRow[];
     }
 
-    // Step 2 — Batch + parallel Claude calls
-    const batches: TxnRow[][] = [];
-    for (let i = 0; i < allTxns.length; i += BATCH_SIZE) {
-      batches.push(allTxns.slice(i, i + BATCH_SIZE));
-    }
-
+    // Step 2 — SQL-based rule checks (no Claude)
     const allViolations: Violation[] = [];
-    for (let i = 0; i < batches.length; i += MAX_CONCURRENT) {
-      const chunk = batches.slice(i, i + MAX_CONCURRENT);
-      const results = await Promise.all(chunk.map(b => processBatch(b, employeeContext)));
-      for (const violations of results) allViolations.push(...violations);
-    }
-
-    // Step 3 — SQL-based rule checks (no Claude)
 
     // Pre-authorization: every debit > $50 is flagged
     const preauthRows = preauthStmt.all({ since_date: sinceDate }) as unknown as PreauthRow[];

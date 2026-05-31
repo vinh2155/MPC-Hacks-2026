@@ -28,6 +28,9 @@ export default function CompliancePage() {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [filterSeverity, setFilterSeverity] = useState('all')
   const [filterEmployee, setFilterEmployee] = useState('all')
+  const [page, setPage] = useState(1)
+
+  const PAGE_SIZE = 20
 
   async function runScan() {
     setScanning(true)
@@ -50,6 +53,7 @@ export default function CompliancePage() {
       setExpandedIds(new Set())
       setFilterSeverity('all')
       setFilterEmployee('all')
+      setPage(1)
       setScanned(true)
       await refetchScore()
     } catch (err) {
@@ -120,7 +124,7 @@ export default function CompliancePage() {
             Severity:
             <select
               value={filterSeverity}
-              onChange={e => setFilterSeverity(e.target.value)}
+              onChange={e => { setFilterSeverity(e.target.value); setPage(1) }}
               className="rounded border border-gray-200 bg-white px-2 py-1 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
             >
               <option value="all">All</option>
@@ -135,7 +139,7 @@ export default function CompliancePage() {
             Employee:
             <select
               value={filterEmployee}
-              onChange={e => setFilterEmployee(e.target.value)}
+              onChange={e => { setFilterEmployee(e.target.value); setPage(1) }}
               className="rounded border border-gray-200 bg-white px-2 py-1 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
             >
               <option value="all">All</option>
@@ -156,8 +160,9 @@ export default function CompliancePage() {
       {/* Violations list */}
       {filtered.length > 0 && (
         <ul className="space-y-3">
-          {filtered.map((v, i) => {
-            const key = `${i}-${v.transaction_code ?? 'null'}`
+          {filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((v, i) => {
+            const i2 = (page - 1) * PAGE_SIZE + i
+            const key = `${i2}-${v.transaction_code ?? 'null'}`
             const isOpen = expandedIds.has(key)
             return (
               <li
@@ -208,6 +213,34 @@ export default function CompliancePage() {
             )
           })}
         </ul>
+      )}
+
+      {/* Pagination */}
+      {filtered.length > PAGE_SIZE && (
+        <div className="flex items-center justify-between mt-6">
+          <span className="text-xs text-gray-400">
+            {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(p => p - 1)}
+              disabled={page === 1}
+              className="px-3 py-1 text-sm rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              ← Prev
+            </button>
+            <span className="text-sm text-gray-600">
+              Page {page} of {Math.ceil(filtered.length / PAGE_SIZE)}
+            </span>
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={page >= Math.ceil(filtered.length / PAGE_SIZE)}
+              className="px-3 py-1 text-sm rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
       )}
 
       {/* After scan but all filtered out */}

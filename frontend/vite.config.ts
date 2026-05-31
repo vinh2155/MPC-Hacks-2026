@@ -9,7 +9,11 @@ export default defineConfig({
   ],
   server: {
     proxy: {
-      '/api': 'http://localhost:3001',
+      '/api': {
+        target: 'http://localhost:3001',
+        proxyTimeout: 300_000,  // 5 min — compliance scan can take 2+ min
+        timeout: 300_000,
+      },
     },
   },
 })

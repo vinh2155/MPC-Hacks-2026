@@ -31,6 +31,11 @@ app.get('/api/debug/transactions', (req, res) => {
   res.json(rows);
 });
 
-app.listen(PORT, () => {
+// Node 22 + keep-alive can send both Content-Length and Transfer-Encoding on
+// long-running responses, which violates HTTP/1.1 and breaks Vite's proxy.
+// Disabling keep-alive prevents chunked encoding from being applied.
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+server.keepAliveTimeout = 0;
+server.setTimeout(300_000); // 5 min — long-running compliance scan
