@@ -1,1 +1,1 @@
-export const TOTAL_BUDGET = 50_000;
+export const TOTAL_BUDGET = 3_000_000;
