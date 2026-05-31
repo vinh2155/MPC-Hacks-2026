@@ -122,10 +122,6 @@ export default function TransactionsPage() {
     return () => controller.abort()
   }, [page, pageSize, debouncedSearch, employee, category, preset, debitOnly, violationsOnly, sortBy, sortDir, scanVersion])
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setPage(1)
-  }, [debouncedSearch, employee, category, preset, debitOnly, violationsOnly, pageSize])
 
   async function runScan() {
     setScanLoading(true)
@@ -183,13 +179,13 @@ export default function TransactionsPage() {
               type="text"
               placeholder="Search merchant, employee…"
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => { setSearch(e.target.value); setPage(1) }}
               className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
             />
           </div>
           <select
             value={employee}
-            onChange={e => setEmployee(e.target.value)}
+            onChange={e => { setEmployee(e.target.value); setPage(1) }}
             className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
           >
             <option value="">All employees</option>
@@ -197,7 +193,7 @@ export default function TransactionsPage() {
           </select>
           <select
             value={category}
-            onChange={e => setCategory(e.target.value)}
+            onChange={e => { setCategory(e.target.value); setPage(1) }}
             className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
           >
             <option value="">All categories</option>
@@ -205,7 +201,7 @@ export default function TransactionsPage() {
           </select>
           <select
             value={preset}
-            onChange={e => setPreset(e.target.value)}
+            onChange={e => { setPreset(e.target.value); setPage(1) }}
             className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
           >
             <option value="last_day">Last day</option>
@@ -221,7 +217,7 @@ export default function TransactionsPage() {
             <input
               type="checkbox"
               checked={debitOnly}
-              onChange={e => setDebitOnly(e.target.checked)}
+              onChange={e => { setDebitOnly(e.target.checked); setPage(1) }}
               className="rounded"
             />
             Debits only
@@ -230,7 +226,7 @@ export default function TransactionsPage() {
             <input
               type="checkbox"
               checked={violationsOnly}
-              onChange={e => setViolationsOnly(e.target.checked)}
+              onChange={e => { setViolationsOnly(e.target.checked); setPage(1) }}
               className="rounded"
             />
             Violations only
@@ -239,7 +235,7 @@ export default function TransactionsPage() {
             <span>Rows per page:</span>
             <select
               value={pageSize}
-              onChange={e => setPageSize(Number(e.target.value))}
+              onChange={e => { setPageSize(Number(e.target.value)); setPage(1) }}
               className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
             >
               {[10, 25, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
