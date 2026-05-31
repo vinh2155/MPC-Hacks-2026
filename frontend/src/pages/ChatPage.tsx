@@ -17,7 +17,7 @@ interface Visualization {
 
 interface ChatResponse {
   answer: string
-  visualization: Visualization
+  visualization: Visualization | null
   followUpSuggestions: string[]
   metadata: { dateRange: string; confidence: 'high' | 'medium' | 'low'; rowsAnalyzed: number }
 }
@@ -150,20 +150,6 @@ function TableViz({ data }: { data: Record<string, unknown>[] }) {
   )
 }
 
-function NumberViz({ data, title }: { data: Record<string, unknown>[]; title: string }) {
-  const row = data[0] ?? {}
-  const val = typeof row.value === 'number'
-    ? row.value
-    : (Object.values(row).find(v => typeof v === 'number') as number | undefined) ?? 0
-  const isCurrency = /spend|amount|total|revenue|budget|cost/i.test(title)
-  return (
-    <div className="flex flex-col items-center justify-center py-6">
-      <p className="text-4xl font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
-        {isCurrency ? `$${fmt(val)}` : fmt(val)}
-      </p>
-    </div>
-  )
-}
 
 function VizCard({ viz }: { viz: Visualization }) {
   if (!viz.data.length) return null
@@ -179,7 +165,6 @@ function VizCard({ viz }: { viz: Visualization }) {
       {viz.type === 'pie' && <PieViz data={viz.data} />}
       {viz.type === 'line' && <LineViz data={viz.data} />}
       {viz.type === 'table' && <TableViz data={viz.data} />}
-      {viz.type === 'number' && <NumberViz data={viz.data} title={viz.title} />}
     </div>
   )
 }
@@ -261,7 +246,7 @@ function AssistantBubble({ msg, onFollowUp, disabled }: { msg: AssistantMessage;
         >
           <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--text-primary)' }}>{msg.content}</p>
         </div>
-        <VizCard viz={response.visualization} />
+        {response.visualization && <VizCard viz={response.visualization} />}
         <div className="flex items-center gap-2 mt-1.5 text-xs flex-wrap" style={{ color: 'var(--text-muted)' }}>
           <span>{response.metadata.dateRange}</span>
           <span>·</span>

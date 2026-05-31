@@ -41,7 +41,7 @@ const VisualizationSchema = z.object({
     title: z.string(),
     data: z.array(z.unknown()),
     config: z.record(z.unknown()),
-  }),
+  }).nullable(),
   followUpSuggestions: z.array(z.string()).min(1).max(5),
   metadata: z.object({
     dateRange: z.string(),
@@ -160,25 +160,26 @@ Return JSON: { "insight": "2-3 sentence analysis of the key finding" }`,
 
     // Step 4 — Visualization + final response
     const response = await askClaude(
-      `Generate a complete response with the best visualization for this data.
+      `Generate a complete response for this data.
 
 User question: "${message}"
 Insight: "${insight}"
 Data (${rows.length} rows): ${JSON.stringify(rows.slice(0, 50))}
 
-Visualization type guide:
-- "bar": comparing values across categories or employees
-- "pie": showing proportional breakdown of a total
-- "line": spending over time
-- "table": listing individual transactions or records
-- "number": a single key metric (e.g. total spend)
+Only include a visualization when it genuinely adds value:
+- Single number answer (e.g. "how much did X spend?", "how many transactions?"): set visualization to null
+- Comparison across 2+ items: use "bar"
+- Proportional breakdown: use "pie"
+- Trend over time: use "line"
+- List of records: use "table"
 
 Return JSON with ALL of these fields:
 - answer: a friendly 1-2 sentence response to the user's question
-- visualization.type: one of bar/pie/line/table/number
-- visualization.title: a short descriptive chart title
-- visualization.data: array of data objects for the chart (e.g. [{ label: "Fuel", value: 1234 }])
-- visualization.config: chart config object (use {} if no special config needed)
+- visualization: null if no chart is needed, otherwise { type, title, data, config }
+  - type: one of bar/pie/line/table
+  - title: a short descriptive chart title
+  - data: array of data objects (e.g. [{ label: "Fuel", value: 1234 }])
+  - config: {} if no special config needed
 - followUpSuggestions: array of 1–5 follow-up questions the manager might ask next
 - metadata.dateRange: describe the date coverage (e.g. "Jan–May 2025" or "all time")
 - metadata.confidence: "high" if data directly answers the question, "medium" if approximate, "low" if inferred`,

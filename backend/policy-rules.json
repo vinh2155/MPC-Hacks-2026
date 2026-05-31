@@ -28,7 +28,7 @@
   ],
   "limits": {
     "totalBudget": 3000000,
-    "preauthThreshold": 50,
+    "preauthThreshold": 600,
     "tipMaxServices": 15,
     "tipMaxMeals": 20,
     "splitChargeWindowHours": 48
