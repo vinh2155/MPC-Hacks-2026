@@ -112,7 +112,7 @@ backend/src/
   routes/
     budget.ts           — GET /api/budget/summary (txn spend + approved requests)
     chat.ts             — POST /api/chat (4-step AI chain)
-    compliance.ts       — POST /api/compliance/scan (batched Claude policy scan, BATCH_SIZE=50, MAX_CONCURRENT=5), GET /api/compliance/score
+    compliance.ts       — POST /api/compliance/scan (SQL-only: pre-auth >$50 + split-charge detection), GET /api/compliance/score
     requests.ts         — POST /api/requests, GET /api/requests, GET /api/requests/:id, PATCH /api/requests/:id (status update)
     reports.ts          — [planned] POST /api/reports/period, POST /api/reports/employee
     employees.ts        — [planned] GET /api/employees
@@ -127,10 +127,10 @@ frontend/src/
   pages/
     BudgetPage.tsx          — renders BudgetGauge
     ChatPage.tsx            — [stub] Issue #9/#10
-    CompliancePage.tsx      — Run Scan button, violations list (severity badges, repeat offender badge, expandable reasoning), client-side filters
+    CompliancePage.tsx      — Run Scan button, violations list (severity badges, repeat offender badge, expandable reasoning), client-side filters (severity + employee), 20-per-page pagination
     ApprovalsPage.tsx       — [stub] Issue #14/#15
     ReportsPage.tsx         — [stub] Issue #16/#17/#18
-    EmployeeRequestPage.tsx — request form (employee name + item + amount + category + reason); pending/approved/denied status screen with 5s polling
+    EmployeeRequestPage.tsx — request form (employee name + item + amount + category + reason); pending/approved/denied status screen with 5s polling (implemented)
   components/
     BudgetGauge.tsx     — animated fill bar + category breakdown modal (pie chart inline, top-8 + Other grouping); consumes BudgetContext
 ```
@@ -145,7 +145,7 @@ Rows marked ✓ are implemented; the rest are planned (no route file yet).
 | ✓ | GET | `/api/budget/summary` | Total spend, budget, utilization %, by-category |
 | ✓ | GET | `/api/debug/transactions` | `?limit=N` — dev only |
 | ✓ | POST | `/api/chat` | 4-step AI chain: `{ message, history }` |
-| ✓ | POST | `/api/compliance/scan` | Batch policy scan, returns violations array |
+| ✓ | POST | `/api/compliance/scan` | SQL-only scan (pre-auth + split-charge), returns violations array |
 | ✓ | GET | `/api/compliance/score` | `{ score, totalTransactions, violationCount }` |
 | ✓ | POST | `/api/requests` | Submit employee request, returns `{ id }` |
 | ✓ | GET | `/api/requests` | All requests, newest first |
@@ -164,6 +164,8 @@ Rows marked ✓ are implemented; the rest are planned (no route file yet).
 - **Claude over Gemini** — better structured JSON output and tool use reliability
 - **Pre-auth (>$50) as SQL-only rule** — the transactions table has no "was pre-authorized" column and requests aren't FK-linked to transactions; treated as an automatic SQL flag independent of Claude's policy scan
 - **Split-charge detection in SQL** — same employee, amounts within 10% of each other, same merchant, within 48h; runs independently of Claude
+- **Claude compliance analysis disabled** — free Anthropic tier is 30k input TPM; batching 4,235 transactions hits the limit instantly. The scan currently runs SQL-only (pre-auth + split-charge); Claude batch loop is stubbed out in `compliance.ts` and can be re-enabled with a higher-tier API key. `BATCH_SIZE = 15`, `MAX_CONCURRENT = 1`, `BATCH_DELAY_MS = 2_000` are in the file as reference.
+- **Node 22 keep-alive bug** — sending long responses with `Content-Length` + keep-alive causes Node to also add `Transfer-Encoding: chunked`, violating HTTP/1.1 and breaking Vite's proxy. Fixed with `server.keepAliveTimeout = 0` in `index.ts`.
 - **Claude-generated SQL is read-only** — never allow INSERT/UPDATE/DELETE from Claude-generated SQL in the chat chain; `isReadOnly()` guard in `chat.ts` enforces this
 - **Compliance scan date window** — scans last 30 days relative to `MAX(posting_date)` in the DB (historical data); never use `Date.now()` as anchor
 - **Repeat offender computed post-hoc** — Claude always returns `is_repeat_offender: false`; server counts violations per employee across all batches after merging, then overrides (≥3 violations → true)
