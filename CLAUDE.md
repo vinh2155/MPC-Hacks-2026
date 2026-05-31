@@ -60,6 +60,7 @@ Key data facts:
 - `category_label` — human-readable MCC label. Key mappings: Fuel (5541/5542), Meals (5812), Vehicle Maintenance (7538), Government Permits (9399), Parts & Supplies (5046), Tolls & Permits (4784)
 - Total budget constant: **$50,000** — defined in `backend/src/lib/config.ts` as `TOTAL_BUDGET`
 - Only `debit` transactions count toward spend totals; filter `WHERE debit_or_credit = 'debit'`
+- Transaction dates are historical — never use `Date.now()` as a reference. Use `SELECT MAX(posting_date)` to anchor date windows.
 
 ### AI layer
 
@@ -75,7 +76,11 @@ Every Claude response returning structured data is validated with **Zod**. Retry
 
 Reusable wrapper: `backend/src/lib/claude.ts` (implemented):
 - `askClaude<T>(prompt, schema, options?)` — `options: { model?, maxTokens?, systemSuffix? }`. Defaults: `claude-sonnet-4-6`, 4096 tokens. `systemSuffix` appends to the base "respond with valid JSON" system prompt.
-- `ClaudeError = { error: string; raw: string }` — thrown on second parse failure. Route handlers should catch this type and return an HTTP error.
+- `ClaudeError = { error: string; raw: string }` — plain object (not an Error instance), thrown on second parse failure. Check with `typeof err === 'object' && 'raw' in err`. Route handlers should catch this type and return an HTTP error.
+
+### `node:sqlite` usage
+
+Import: `import { DatabaseSync } from 'node:sqlite'`. Synchronous API — no async needed. `.all()` and `.get()` return `Record<string, SQLOutputValue>[]` — **must cast through `unknown`** before a typed interface: `stmt.all({}) as unknown as MyRow[]`. Never cast directly without `unknown` — TypeScript will reject the overlap.
 
 ### Frontend tech
 
@@ -83,6 +88,7 @@ Reusable wrapper: `backend/src/lib/claude.ts` (implemented):
 - **ESLint**: type-aware (`tseslint.configs.recommendedTypeChecked`). `parserOptions.project: true` in `eslint.config.js` — running `npm run lint` requires a valid `tsconfig.app.json`.
 - **Vite proxy**: all `/api/*` requests forwarded to `http://localhost:3001` — no CORS headers needed on the backend in dev.
 - **Tab rendering**: `App.tsx` renders all manager pages simultaneously with `className={activeTab !== 'budget' ? 'hidden' : ''}` — every page is always mounted. Any `useEffect` or API call at the top level of a page component fires immediately on app load, not when the tab is clicked. Use lazy fetching (trigger on user action or check visibility) if a page should only load data when active.
+- **Recharts**: already installed; `BudgetGauge.tsx` uses `PieChart` with `Pie`, `Cell`, `Tooltip`, `Legend`, `ResponsiveContainer`.
 
 ### Security
 
@@ -113,14 +119,15 @@ backend/src/
 
 frontend/src/
   main.tsx
-  App.tsx               — role toggle (defaults to manager), tab routing; wraps app in BudgetProvider
+  App.tsx               — role toggle (defaults to manager), tab routing; wraps app in ComplianceProvider + BudgetProvider; compliance score chip in manager header
   context/RoleContext.tsx — useRole() hook, RoleProvider; default role = 'manager'
   context/BudgetContext.tsx — polls /api/budget/summary every 5s; exposes data/error/refetch
+  context/ComplianceContext.tsx — fetches /api/compliance/score on mount; exposes scoreData/refetchScore; used by header chip + CompliancePage
   lib/format.ts         — fmt(n) currency formatter; pctOf(amount, total) percentage helper
   pages/
     BudgetPage.tsx          — renders BudgetGauge
     ChatPage.tsx            — [stub] Issue #9/#10
-    CompliancePage.tsx      — [stub] Issue #11/#12
+    CompliancePage.tsx      — Run Scan button, violations list (severity badges, repeat offender badge, expandable reasoning), client-side filters
     ApprovalsPage.tsx       — [stub] Issue #14/#15
     ReportsPage.tsx         — [stub] Issue #16/#17/#18
     EmployeeRequestPage.tsx — request form (employee name + item + amount + category + reason); pending/approved/denied status screen with 5s polling
@@ -155,6 +162,10 @@ Rows marked ✓ are implemented; the rest are planned (no route file yet).
 - **No persistent database** — data reloads from `transactions.xlsx` on each server start; `requests` table is session-only
 - **Role toggle, not auth** — `useState` in React switches between Employee and Manager views; no sessions or passwords
 - **Claude over Gemini** — better structured JSON output and tool use reliability
+- **Pre-auth (>$50) as SQL-only rule** — the transactions table has no "was pre-authorized" column and requests aren't FK-linked to transactions; treated as an automatic SQL flag independent of Claude's policy scan
 - **Split-charge detection in SQL** — same employee, amounts within 10% of each other, same merchant, within 48h; runs independently of Claude
-- **Claude-generated SQL is read-only** — never allow INSERT/UPDATE/DELETE from Claude-generated SQL in the chat chain
+- **Claude-generated SQL is read-only** — never allow INSERT/UPDATE/DELETE from Claude-generated SQL in the chat chain; `isReadOnly()` guard in `chat.ts` enforces this
+- **Compliance scan date window** — scans last 30 days relative to `MAX(posting_date)` in the DB (historical data); never use `Date.now()` as anchor
+- **Repeat offender computed post-hoc** — Claude always returns `is_repeat_offender: false`; server counts violations per employee across all batches after merging, then overrides (≥3 violations → true)
+- **Concurrent scan guard** — module-level `scanInProgress` flag in `compliance.ts` returns 409 if a scan is already running; reset in `finally`
 - **Vite proxy** — `frontend/vite.config.ts` proxies `/api` → `http://localhost:3001` to avoid CORS in dev

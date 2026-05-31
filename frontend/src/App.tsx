@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { RoleProvider, useRole } from './context/RoleContext'
 import { BudgetProvider } from './context/BudgetContext'
+import { ComplianceProvider, useCompliance } from './context/ComplianceContext'
 import BudgetPage from './pages/BudgetPage'
 import ChatPage from './pages/ChatPage'
 import CompliancePage from './pages/CompliancePage'
@@ -54,8 +55,15 @@ function ManagerView({ activeTab, setActiveTab }: {
   )
 }
 
+function scoreColorClass(score: number): string {
+  if (score >= 90) return 'text-emerald-600 bg-emerald-50'
+  if (score >= 75) return 'text-amber-600 bg-amber-50'
+  return 'text-red-600 bg-red-50'
+}
+
 function AppShell() {
   const { role, toggleRole } = useRole()
+  const { scoreData } = useCompliance()
   const [activeTab, setActiveTab] = useState<ManagerTab>('budget')
 
   return (
@@ -63,12 +71,19 @@ function AppShell() {
       <header className="bg-white shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
           <span className="text-xl font-bold text-gray-900">Brianna</span>
-          <button
-            onClick={toggleRole}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
-          >
-            Switch to {role === 'manager' ? 'Employee' : 'Manager'}
-          </button>
+          <div className="flex items-center gap-4">
+            {role === 'manager' && (
+              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${scoreData ? scoreColorClass(scoreData.score) : 'text-gray-500 bg-gray-100'}`}>
+                Compliance: {scoreData ? `${scoreData.score}%` : '--'}
+              </span>
+            )}
+            <button
+              onClick={toggleRole}
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+            >
+              Switch to {role === 'manager' ? 'Employee' : 'Manager'}
+            </button>
+          </div>
         </div>
       </header>
       {role === 'manager' ? (
@@ -85,9 +100,11 @@ function AppShell() {
 export default function App() {
   return (
     <RoleProvider>
-      <BudgetProvider>
-        <AppShell />
-      </BudgetProvider>
+      <ComplianceProvider>
+        <BudgetProvider>
+          <AppShell />
+        </BudgetProvider>
+      </ComplianceProvider>
     </RoleProvider>
   )
 }
