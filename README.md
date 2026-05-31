@@ -13,7 +13,7 @@ Brianna is a manager dashboard for a single manager to oversee their team's spen
 | Frontend | React + Vite + TypeScript, Recharts |
 | Backend | Node.js + Express + TypeScript |
 | AI | Claude (Anthropic) via multi-step reasoning chains |
-| Data | Excel parsed into SQLite in-memory DB at startup (`better-sqlite3`) |
+| Data | Excel parsed into SQLite in-memory DB at startup (`node:sqlite` built-in) |
 | Validation | Zod on every Claude JSON response |
 
 ## Roles

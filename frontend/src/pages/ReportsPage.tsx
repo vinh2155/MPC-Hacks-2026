@@ -85,25 +85,33 @@ export default function ReportsPage() {
   const [employeesError, setEmployeesError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const inFlight = useRef(false)
+  const generateAbort = useRef<AbortController | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [periodReport, setPeriodReport] = useState<PeriodReport | null>(null)
   const [employeeReport, setEmployeeReport] = useState<EmployeeReport | null>(null)
 
   useEffect(() => {
-    fetch('/api/employees')
+    const controller = new AbortController()
+    fetch('/api/employees', { signal: controller.signal })
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()
       })
       .then((data: unknown) => {
-        // C2: validate shape before storing — a non-array response would crash employees.map()
         if (Array.isArray(data)) {
           setEmployees(data as string[])
         } else {
           setEmployeesError('Unexpected response loading employees.')
         }
       })
-      .catch(() => setEmployeesError('Failed to load employee list — please refresh.'))
+      .catch(err => {
+        if ((err as Error).name === 'AbortError') return
+        setEmployeesError('Failed to load employee list — please refresh.')
+      })
+    return () => {
+      controller.abort()
+      generateAbort.current?.abort()
+    }
   }, [])
 
   async function generate() {
@@ -118,6 +126,8 @@ export default function ReportsPage() {
       return
     }
     setLoading(true)
+    const controller = new AbortController()
+    generateAbort.current = controller
     try {
       if (mode === 'period') {
         setPeriodReport(null)
@@ -125,6 +135,7 @@ export default function ReportsPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ period }),
+          signal: controller.signal,
         })
         if (!res.ok) {
           const err = await res.json().catch(() => ({})) as { error?: string }
@@ -138,6 +149,7 @@ export default function ReportsPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ employeeName: selectedEmployee }),
+          signal: controller.signal,
         })
         if (!res.ok) {
           const err = await res.json().catch(() => ({})) as { error?: string }
@@ -146,7 +158,8 @@ export default function ReportsPage() {
         }
         setEmployeeReport(await res.json() as EmployeeReport)
       }
-    } catch {
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') return
       setError('Network error — please try again.')
     } finally {
       setLoading(false)
@@ -250,7 +263,7 @@ export default function ReportsPage() {
       )}
 
       {/* Period report card */}
-      {mode === 'period' && periodReport && !loading && (
+      {mode === 'period' && periodReport && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
           <div className="flex items-start justify-between gap-4 mb-5">
             <div>
@@ -283,7 +296,7 @@ export default function ReportsPage() {
       )}
 
       {/* Employee report card */}
-      {mode === 'employee' && employeeReport && !loading && (
+      {mode === 'employee' && employeeReport && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
           <div className="flex items-start justify-between gap-4 mb-5">
             <div>

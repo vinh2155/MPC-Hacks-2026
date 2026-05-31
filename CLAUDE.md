@@ -32,6 +32,12 @@ python data/process_data.py   # regenerate transactions.xlsx from raw source
 
 Node >=22 is required — the backend uses `node:sqlite` (built-in, experimental).
 
+```bash
+# TypeScript check (no emit) — run after edits to verify zero errors
+cd backend && npx tsc --noEmit
+cd frontend && npx tsc --noEmit
+```
+
 ## Architecture
 
 Monorepo with two packages:
@@ -100,7 +106,7 @@ Debug endpoint (created with data layer): `GET /api/debug/transactions?limit=5`
 
 ## File Structure
 
-Implemented files are listed without annotation. Planned-but-not-yet-created files are marked `[planned]`.
+All features (#1–#22) are implemented. Files listed below reflect current state.
 
 ```
 backend/src/
@@ -113,7 +119,7 @@ backend/src/
     budget.ts           — GET /api/budget/summary (txn spend + approved requests)
     chat.ts             — POST /api/chat (4-step AI chain)
     compliance.ts       — POST /api/compliance/scan (SQL-only: pre-auth >$50 + split-charge detection), GET /api/compliance/score
-    requests.ts         — POST /api/requests, GET /api/requests, GET /api/requests/:id, PATCH /api/requests/:id (status update)
+    requests.ts         — POST /api/requests, GET /api/requests, GET /api/requests/:id, PATCH /api/requests/:id (status update), POST /api/requests/:id/recommendation (Claude approve/deny/escalate)
     reports.ts          — POST /api/reports/period (SQL gathers 6 data points, Claude generates 6-section exec memo; returns { period, generatedAt, narrative, data }); POST /api/reports/employee (all-time spend profile vs team avg of 8, Claude narrative, compliance window last 30 days)
     employees.ts        — GET /api/employees (DISTINCT employee_name from transactions, sorted)
 
