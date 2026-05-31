@@ -130,9 +130,8 @@ let scanInProgress = false;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const BATCH_SIZE = 15;
-const MAX_CONCURRENT = 1;
-const BATCH_DELAY_MS = 2_000; // pause between batches to stay under 30k TPM rate limit
+const BATCH_SIZE = 30;
+const MAX_CONCURRENT = 3;
 
 // Rule 1 (>$50 pre-authorization) and split-charge detection are handled by SQL — not Claude.
 
@@ -189,6 +188,14 @@ TRANSACTIONS TO ANALYZE:
 ${txnJson}
 
 Analyze each transaction for policy violations. Return ONLY transactions that violate a policy rule — omit compliant ones.
+
+Severity guide (be decisive — do not default to medium):
+- critical: strong fraud signal (personal retail/entertainment on corporate card, same charge appearing twice, clearly non-business expense)
+- high: definite policy rule broken (alcohol charge with no customer name, tip percentage clearly over the configured limit, prohibited merchant category)
+- medium: probable violation with some ambiguity (meal charge that likely included alcohol, tip that appears slightly over limit)
+- low: minor or technical issue (small borderline amount, unusual but plausible business reason)
+Only flag a transaction if you are reasonably confident it violates a rule. Trucking-related expenses (fuel, tolls, vehicle maintenance, parts) are generally legitimate unless the amount or pattern is suspicious.
+
 Return JSON: { "violations": [ { "transaction_code": number|null, "employee_name": string, "violation_type": string, "policy_rule_cited": string, "severity": "critical"|"high"|"medium"|"low", "reasoning": string, "is_repeat_offender": false } ] }
 Note: always set is_repeat_offender to false — it is computed server-side after all batches are merged.`;
 }
@@ -226,11 +233,11 @@ function preauthSeverity(amount: number, threshold: number): 'critical' | 'high'
 }
 
 // Split-charge severity scales with the combined transaction total:
-//   < $200 → medium  |  $200–$1000 → high  |  $1000+ → critical
+//   < $1000 → medium  |  $1000–$5000 → high  |  $5000+ → critical
 function splitChargeSeverity(amount1: number, amount2: number): 'critical' | 'high' | 'medium' {
   const total = amount1 + amount2;
-  if (total >= 1000) return 'critical';
-  if (total >= 200)  return 'high';
+  if (total >= 5000) return 'critical';
+  if (total >= 1000) return 'high';
   return 'medium';
 }
 
@@ -313,6 +320,21 @@ router.post('/scan', async (_req, res, next) => {
           { transaction_code: sc.code2, amount: sc.amount2 ?? 0, date: sc.date2 ?? '', merchant: sc.merchant_name ?? '' },
         ],
       });
+    }
+
+    // Step 2b — Claude analysis on recent 3-day window
+    console.log(`[compliance] claudeTxns: ${claudeTxns.length}, sql violations so far: ${allViolations.length}`);
+    if (claudeTxns.length > 0) {
+      const batches: TxnRow[][] = [];
+      for (let i = 0; i < claudeTxns.length; i += BATCH_SIZE) {
+        batches.push(claudeTxns.slice(i, i + BATCH_SIZE));
+      }
+      console.log(`[compliance] running ${batches.length} Claude batch(es), ${MAX_CONCURRENT} concurrent`);
+      for (let i = 0; i < batches.length; i += MAX_CONCURRENT) {
+        const chunk = batches.slice(i, i + MAX_CONCURRENT);
+        const results = await Promise.all(chunk.map(b => processBatch(b, employeeContext)));
+        for (const violations of results) allViolations.push(...violations);
+      }
     }
 
     // Compute repeat offenders: >= 3 violations within the scanned window → flag all their violations

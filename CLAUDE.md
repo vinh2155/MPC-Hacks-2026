@@ -112,7 +112,7 @@ All features (#1–#22) are implemented. Files listed below reflect current stat
 
 ```
 backend/src/
-  index.ts              — Express entry; mounts /api/budget, /api/chat, /api/compliance, /api/requests, /api/reports, /api/employees, /api/health, /api/debug/transactions
+  index.ts              — Express entry; mounts /api/budget, /api/chat, /api/compliance, /api/policy, /api/requests, /api/reports, /api/employees, /api/transactions, /api/health, /api/debug/transactions
                           Add new routers here as routes/ files are created
   db/index.ts           — SQLite init, loads xlsx, exports db instance
   lib/claude.ts         — askClaude<T> wrapper with Zod + retry
@@ -120,7 +120,9 @@ backend/src/
   routes/
     budget.ts           — GET /api/budget/summary (txn spend + approved requests)
     chat.ts             — POST /api/chat (4-step AI chain)
-    compliance.ts       — POST /api/compliance/scan (SQL-only: pre-auth >$50 + split-charge detection), GET /api/compliance/score
+    compliance.ts       — POST /api/compliance/scan (SQL-only: pre-auth + split-charge detection), GET /api/compliance/score
+    policy.ts           — GET /api/policy, PUT /api/policy; reads/writes policy-rules.json; exports loadPolicyRules() + loadPolicyLimits() used by compliance.ts; module-level cache invalidated on PUT
+    transactions.ts     — GET /api/transactions (paginated, filterable, sortable); overlays violation data from last scan in-memory
     requests.ts         — POST /api/requests, GET /api/requests, GET /api/requests/:id, PATCH /api/requests/:id (status update), POST /api/requests/:id/recommendation (Claude approve/deny/escalate)
     reports.ts          — POST /api/reports/period (SQL gathers 6 data points, Claude generates 6-section exec memo; returns { period, generatedAt, narrative, data }); POST /api/reports/employee (all-time spend profile vs team avg of 8, Claude narrative, compliance window last 30 days)
     employees.ts        — GET /api/employees (DISTINCT employee_name from transactions, sorted)
@@ -140,6 +142,8 @@ frontend/src/
     CompliancePage.tsx      — Run Scan button, violations list (severity badges, repeat offender badge, expandable reasoning, split-charge amber badge + grouped related-transactions block), client-side filters (severity + employee), 20-per-page pagination
     ApprovalsPage.tsx       — pending requests with auto-fetched AI recommendation chips (approve/deny/escalate), budget impact per card, Approve/Deny buttons; resolved section below
     ReportsPage.tsx         — segmented control (Period/Employee); period: weekly/monthly selector → POST /api/reports/period; employee: dropdown from GET /api/employees → POST /api/reports/employee; stats strip + narrative; Download JSON (filename: brianna-report-{type}-{date}.json)
+    TransactionsPage.tsx    — paginated transaction table; filters: search, employee, category, date preset, debit-only, violations-only; sortable columns (posting_date, amount, employee_name, merchant_name, severity); violation severity badge with hover tooltip showing reasoning
+    PolicyPage.tsx          — editable spending limits (totalBudget, preauthThreshold, tip caps, split-charge window) + free-text compliance rules; saves to /api/policy; LimitRow uses local string state committed on blur to allow intermediate typing
     EmployeeRequestPage.tsx — request form (employee name + item + amount + category + reason); pending/approved/denied status screen with 5s polling (implemented)
   components/
     BudgetGauge.tsx     — animated fill bar + category breakdown modal (pie chart inline, top-8 + Other grouping); consumes BudgetContext
@@ -155,6 +159,9 @@ All routes are implemented.
 | GET | `/api/budget/summary` | Total spend, budget, utilization %, by-category |
 | GET | `/api/debug/transactions` | `?limit=N` — dev only |
 | POST | `/api/chat` | 4-step AI chain: `{ message, history }` — history capped to last 10 messages server-side |
+| GET | `/api/policy` | Returns current policy rules + limits from policy-rules.json |
+| PUT | `/api/policy` | Save updated policy rules + limits to policy-rules.json |
+| GET | `/api/transactions` | Paginated transactions with violation overlay; supports search, employee, category, preset, debitOnly, violationsOnly, sortBy, sortDir, page, pageSize |
 | POST | `/api/compliance/scan` | SQL-only scan (pre-auth + split-charge), returns violations array |
 | GET | `/api/compliance/score` | `{ score, totalTransactions, violationCount }` |
 | POST | `/api/requests` | Submit employee request, returns `{ id }` |
@@ -172,7 +179,7 @@ All routes are implemented.
 - **No persistent database** — data reloads from `transactions.xlsx` on each server start; `requests` table is session-only
 - **Role toggle, not auth** — `useState` in React switches between Employee and Manager views; no sessions or passwords
 - **Claude over Gemini** — better structured JSON output and tool use reliability
-- **Pre-auth (>$50) as SQL-only rule** — the transactions table has no "was pre-authorized" column and requests aren't FK-linked to transactions; treated as an automatic SQL flag independent of Claude's policy scan
+- **Pre-auth as SQL-only rule** — the transactions table has no "was pre-authorized" column and requests aren't FK-linked to transactions; treated as an automatic SQL flag independent of Claude's policy scan. Threshold is `limits.preauthThreshold` from `policy-rules.json` (default $50, configurable in Policy tab).
 - **Split-charge detection in SQL** — same employee, amounts within 10% of each other, same merchant, within 48h; runs independently of Claude
 - **Claude compliance analysis disabled** — free Anthropic tier is 30k input TPM; batching 4,235 transactions hits the limit instantly. The scan currently runs SQL-only (pre-auth + split-charge); Claude batch loop is stubbed out in `compliance.ts` and can be re-enabled with a higher-tier API key. `BATCH_SIZE = 15`, `MAX_CONCURRENT = 1`, `BATCH_DELAY_MS = 2_000` are in the file as reference.
 - **Node 22 keep-alive bug** — sending long responses with `Content-Length` + keep-alive causes Node to also add `Transfer-Encoding: chunked`, violating HTTP/1.1 and breaking Vite's proxy. Fixed with `server.keepAliveTimeout = 0` in `index.ts`.
@@ -183,3 +190,6 @@ All routes are implemented.
 - **Vite proxy** — `frontend/vite.config.ts` proxies `/api` → `http://localhost:3001` to avoid CORS in dev
 - **Employee report team average hardcoded to 8** — `teamAverageSpend = allTimeSpend / 8` in `reports.ts`; not derived from DISTINCT employee count. Changing the dataset's employees requires updating this constant.
 - **Employee name prompt injection guard** — `reports.ts` sanitizes `employeeName` with `.replace(/[\r\n]/g, ' ').slice(0, 100)` before embedding in the Claude prompt; apply the same pattern to any user-supplied string going into a prompt.
+- **`policy-rules.json` is the only persistent file** — all other state (transactions, requests) is in-memory. Policy limits (totalBudget, preauthThreshold, tip caps, split-charge window) and compliance rules are read from this file at scan time via `loadPolicyLimits()` / `loadPolicyRules()`. The module-level cache in `policy.ts` is busted on every `PUT`.
+- **React filter page-reset pattern** — when multiple filters and pagination coexist, do NOT use a separate `useEffect` to reset `page` to 1 on filter changes. The effect fires after the fetch effect, causing its `AbortController` cleanup to cancel the filtered request. Instead, call `setPage(1)` inline in each filter's `onChange` handler so all state batches into one render and one fetch. See `TransactionsPage.tsx`.
+- **Compliance severity is dynamic** — pre-auth severity scales with `amount / threshold` ratio (low/medium/high/critical); split-charge severity scales with combined total (<$200 medium, <$1000 high, ≥$1000 critical). Helpers `preauthSeverity` and `splitChargeSeverity` in `compliance.ts`.

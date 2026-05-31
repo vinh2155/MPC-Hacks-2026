@@ -5,7 +5,7 @@ export type ClaudeError = { error: string; raw: string };
 
 const apiKey = process.env.ANTHROPIC_API_KEY;
 if (!apiKey) throw new Error('ANTHROPIC_API_KEY environment variable is not set');
-const anthropic = new Anthropic({ apiKey });
+const anthropic = new Anthropic({ apiKey, timeout: 30_000 });
 
 const BASE_SYSTEM_PROMPT =
   'You are a JSON API. Always respond with valid JSON that exactly matches ' +
@@ -40,7 +40,8 @@ async function callClaude(
 function tryParse<T>(raw: string, schema: z.ZodType<T>): z.SafeParseReturnType<unknown, T> {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(raw);
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+    parsed = JSON.parse(cleaned);
   } catch (err) {
     return {
       success: false,
