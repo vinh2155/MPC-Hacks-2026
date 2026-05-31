@@ -41,11 +41,11 @@ const VisualizationSchema = z.object({
     title: z.string(),
     data: z.array(z.unknown()),
     config: z.record(z.unknown()),
-  }).nullable(),
-  followUpSuggestions: z.array(z.string()).min(1).max(5),
+  }).nullish().transform(v => v ?? null),
+  followUpSuggestions: z.array(z.string()),
   metadata: z.object({
     dateRange: z.string(),
-    confidence: z.enum(['high', 'medium', 'low']),
+    confidence: z.enum(['high', 'medium', 'low']).catch('medium' as const),
   }),
 });
 
