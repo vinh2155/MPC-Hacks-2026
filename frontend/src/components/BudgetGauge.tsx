@@ -2,12 +2,7 @@ import { useState, useEffect } from 'react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { useBudget } from '../context/BudgetContext'
 import { fmt, pctOf } from '../lib/format'
-
-const PIE_COLORS = [
-  '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6',
-  '#06b6d4', '#f97316', '#ec4899', '#6366f1',
-  '#14b8a6',
-]
+import { CHART_COLORS } from '../lib/chartColors'
 
 function barColorClass(pct: number) {
   if (pct < 70) return 'bg-emerald-500'
@@ -177,7 +172,7 @@ export default function BudgetGauge() {
                       paddingAngle={2}
                     >
                       {pieData.map((_, i) => (
-                        <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip
@@ -198,7 +193,7 @@ export default function BudgetGauge() {
                       <div className="flex items-center gap-2">
                         <span
                           className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }}
+                          style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }}
                         />
                         <span className="text-gray-700">{cat.label}</span>
                       </div>

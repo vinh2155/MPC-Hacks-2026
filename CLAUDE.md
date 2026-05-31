@@ -40,7 +40,7 @@ Monorepo with two packages:
 backend/     — Node.js + Express + TypeScript API server
 frontend/    — React + Vite + TypeScript UI
 data/        — transactions.xlsx dataset + process_data.py transform script
-docs/        — PRD.md (requirements), issues_backlog.md (22 issues)
+docs/        — PRD.md (full requirements), issues_backlog.md (22-issue feature backlog — read before implementing new features)
 ```
 
 ### Data layer
@@ -86,7 +86,7 @@ Import: `import { DatabaseSync } from 'node:sqlite'`. Synchronous API — no asy
 
 - **Tailwind v4**: no `tailwind.config.js`. Plugin loaded via `@tailwindcss/vite` in `vite.config.ts`. Only entry needed in `src/index.css`: `@import "tailwindcss"`.
 - **ESLint**: type-aware (`tseslint.configs.recommendedTypeChecked`). `parserOptions.project: true` in `eslint.config.js` — running `npm run lint` requires a valid `tsconfig.app.json`.
-- **Vite proxy**: all `/api/*` requests forwarded to `http://localhost:3001` — no CORS headers needed on the backend in dev.
+- **Vite proxy**: all `/api/*` requests forwarded to `http://localhost:3001`. The Vite proxy handles CORS in dev; `cors()` middleware is also configured globally on the backend for production.
 - **Tab rendering**: `App.tsx` renders all manager pages simultaneously with `className={activeTab !== 'budget' ? 'hidden' : ''}` — every page is always mounted. Any `useEffect` or API call at the top level of a page component fires immediately on app load, not when the tab is clicked. Use lazy fetching (trigger on user action or check visibility) if a page should only load data when active.
 - **Recharts**: already installed; `BudgetGauge.tsx` uses `PieChart` with `Pie`, `Cell`, `Tooltip`, `Legend`, `ResponsiveContainer`.
 
@@ -144,7 +144,7 @@ Rows marked ✓ are implemented; the rest are planned (no route file yet).
 | ✓ | GET | `/api/health` | Health check |
 | ✓ | GET | `/api/budget/summary` | Total spend, budget, utilization %, by-category |
 | ✓ | GET | `/api/debug/transactions` | `?limit=N` — dev only |
-| ✓ | POST | `/api/chat` | 4-step AI chain: `{ message, history }` |
+| ✓ | POST | `/api/chat` | 4-step AI chain: `{ message, history }` — history capped to last 10 messages server-side |
 | ✓ | POST | `/api/compliance/scan` | SQL-only scan (pre-auth + split-charge), returns violations array |
 | ✓ | GET | `/api/compliance/score` | `{ score, totalTransactions, violationCount }` |
 | ✓ | POST | `/api/requests` | Submit employee request, returns `{ id }` |
