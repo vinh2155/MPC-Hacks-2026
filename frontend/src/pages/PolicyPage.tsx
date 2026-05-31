@@ -295,7 +295,6 @@ export default function PolicyPage() {
     </div>
   )
 }
-<<<<<<< Updated upstream
 
 function LimitRow({
   label, description, value, prefix, suffix, step, onChange,
@@ -341,5 +340,3 @@ function LimitRow({
     </div>
   )
 }
-=======
->>>>>>> Stashed changes
