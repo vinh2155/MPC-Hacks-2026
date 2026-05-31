@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useBudget } from '../context/BudgetContext'
 
 interface PolicyRule {
   id: string
@@ -23,6 +24,7 @@ let nextId = Date.now()
 function genId() { return `rule_${nextId++}` }
 
 export default function PolicyPage() {
+  const { refetch: refetchBudget } = useBudget()
   const [saved, setSaved] = useState<PolicyConfig | null>(null)
   const [rules, setRules] = useState<PolicyRule[]>([])
   const [limits, setLimits] = useState<PolicyLimits>({
@@ -85,6 +87,7 @@ export default function PolicyPage() {
       setRules(data.rules.map(r => ({ ...r })))
       setLimits({ ...data.limits })
       setToast({ type: 'success', message: 'Policy saved.' })
+      refetchBudget()
     } catch {
       setToast({ type: 'error', message: 'Failed to save policy.' })
     } finally {

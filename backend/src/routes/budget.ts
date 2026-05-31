@@ -25,6 +25,12 @@ const byCategoryStmt = db.prepare(`
   ORDER BY amount DESC
 `);
 
+const dateRangeStmt = db.prepare(`
+  SELECT MIN(posting_date) AS period_start, MAX(posting_date) AS period_end
+  FROM transactions
+  WHERE debit_or_credit = 'debit'
+`);
+
 router.get('/summary', (_req, res, next) => {
   try {
     const txnTotal = Number((txnSpendStmt.get({}) as { total: unknown }).total ?? 0);
@@ -32,6 +38,7 @@ router.get('/summary', (_req, res, next) => {
     const totalSpend = parseFloat((txnTotal + reqTotal).toFixed(2));
     const byCategory = (byCategoryStmt.all({}) as { label: string; amount: number }[])
       .map(r => ({ label: r.label, amount: parseFloat(r.amount.toFixed(2)) }));
+    const dateRange = dateRangeStmt.get({}) as { period_start: string; period_end: string };
 
     const totalBudget = loadPolicyLimits().totalBudget;
     res.json({
@@ -39,6 +46,8 @@ router.get('/summary', (_req, res, next) => {
       totalBudget,
       utilizationPct: parseFloat(((totalSpend / totalBudget) * 100).toFixed(1)),
       byCategory,
+      periodStart: dateRange.period_start,
+      periodEnd: dateRange.period_end,
     });
   } catch (err) {
     next(err);

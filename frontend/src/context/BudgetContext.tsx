@@ -5,6 +5,8 @@ export interface BudgetSummary {
   totalBudget: number
   utilizationPct: number
   byCategory: { label: string; amount: number }[]
+  periodStart: string
+  periodEnd: string
 }
 
 interface BudgetContextValue {
@@ -24,7 +26,9 @@ function isValidSummary(v: unknown): v is BudgetSummary {
     typeof o.totalSpend === 'number' &&
     typeof o.totalBudget === 'number' &&
     typeof o.utilizationPct === 'number' &&
-    Array.isArray(o.byCategory)
+    Array.isArray(o.byCategory) &&
+    typeof o.periodStart === 'string' &&
+    typeof o.periodEnd === 'string'
   )
 }
 
