@@ -58,7 +58,7 @@ function BarViz({ data }: { data: Record<string, unknown>[] }) {
         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
         <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#8888AA' }} />
         <YAxis tick={{ fontSize: 11, fill: '#8888AA' }} tickFormatter={(v: number) => `$${fmt(v)}`} />
-        <Tooltip formatter={(v: number) => [`$${fmt(v)}`, 'Amount']} contentStyle={TOOLTIP_STYLE} />
+        <Tooltip formatter={(v: unknown) => [`$${fmt(v as number)}`, 'Amount']} contentStyle={TOOLTIP_STYLE} />
         <Bar dataKey="value" fill={CHART_COLORS[0]} radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
@@ -84,7 +84,7 @@ function PieViz({ data }: { data: Record<string, unknown>[] }) {
             <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
           ))}
         </Pie>
-        <Tooltip formatter={(v: number) => [`$${fmt(v)}`, '']} contentStyle={TOOLTIP_STYLE} />
+        <Tooltip formatter={(v: unknown) => [`$${fmt(v as number)}`, '']} contentStyle={TOOLTIP_STYLE} />
         <Legend iconType="circle" iconSize={8} wrapperStyle={{ color: '#8888AA', fontSize: 11 }} />
       </PieChart>
     </ResponsiveContainer>
@@ -99,7 +99,7 @@ function LineViz({ data }: { data: Record<string, unknown>[] }) {
         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
         <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#8888AA' }} />
         <YAxis tick={{ fontSize: 11, fill: '#8888AA' }} tickFormatter={(v: number) => `$${fmt(v)}`} />
-        <Tooltip formatter={(v: number) => [`$${fmt(v)}`, 'Amount']} contentStyle={TOOLTIP_STYLE} />
+        <Tooltip formatter={(v: unknown) => [`$${fmt(v as number)}`, 'Amount']} contentStyle={TOOLTIP_STYLE} />
         <Line type="monotone" dataKey="value" stroke={CHART_COLORS[0]} strokeWidth={2} dot={{ r: 3, fill: CHART_COLORS[0] }} />
       </LineChart>
     </ResponsiveContainer>

@@ -71,7 +71,7 @@ export default function CategoryPie() {
                 ))}
               </Pie>
               <Tooltip
-                formatter={(v: number) => [`$${fmt(v)} (${pctOf(v, categoryTotal)}%)`, '']}
+                formatter={(v: unknown) => [`$${fmt(v as number)} (${pctOf(v as number, categoryTotal)}%)`, '']}
                 contentStyle={TOOLTIP_STYLE}
               />
             </PieChart>
