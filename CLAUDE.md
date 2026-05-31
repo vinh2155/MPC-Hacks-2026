@@ -145,7 +145,7 @@ frontend/src/
 
 ## API Routes
 
-Rows marked ✓ are implemented; the rest are planned (no route file yet).
+All routes are implemented.
 
 | | Method | Path | Description |
 |-|--------|------|-------------|

@@ -8,6 +8,8 @@ import complianceRouter from './routes/compliance';
 import requestsRouter from './routes/requests';
 import reportsRouter from './routes/reports';
 import employeesRouter from './routes/employees';
+import policyRouter from './routes/policy';
+import transactionsRouter from './routes/transactions';
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
@@ -21,6 +23,8 @@ app.use('/api/compliance', complianceRouter);
 app.use('/api/requests', requestsRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/employees', employeesRouter);
+app.use('/api/policy', policyRouter);
+app.use('/api/transactions', transactionsRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });

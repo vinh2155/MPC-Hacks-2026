@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { db } from '../db';
 import { askClaude, type ClaudeError } from '../lib/claude';
+import { loadPolicyRules, loadPolicyLimits } from './policy';
 
 const router = Router();
 
@@ -91,16 +92,14 @@ const employeeContextStmt = db.prepare(`
   GROUP BY category_label
 `);
 
-// Pre-authorization threshold: all debits > $50 are automatically flagged
 const preauthStmt = db.prepare(`
   SELECT transaction_code, employee_name, merchant_name, amount, posting_date, category_label
   FROM transactions
   WHERE debit_or_credit = 'debit'
-    AND amount > 50
+    AND amount > :threshold
     AND posting_date >= :since_date
 `);
 
-// Split-charge detection scoped to the same 30-day window
 const splitChargeStmt = db.prepare(`
   SELECT t1.transaction_code AS code1,
          t2.transaction_code AS code2,
@@ -115,7 +114,7 @@ const splitChargeStmt = db.prepare(`
     ON t1.employee_name = t2.employee_name
    AND t1.merchant_name = t2.merchant_name
    AND t1.transaction_code < t2.transaction_code
-   AND ABS(julianday(t2.posting_date) - julianday(t1.posting_date)) <= 2
+   AND ABS(julianday(t2.posting_date) - julianday(t1.posting_date)) <= :window_days
    AND t2.amount BETWEEN t1.amount * 0.9 AND t1.amount * 1.1
   WHERE t1.debit_or_credit = 'debit'
     AND t2.debit_or_credit = 'debit'
@@ -136,14 +135,12 @@ const MAX_CONCURRENT = 1;
 const BATCH_DELAY_MS = 2_000; // pause between batches to stay under 30k TPM rate limit
 
 // Rule 1 (>$50 pre-authorization) and split-charge detection are handled by SQL — not Claude.
-const POLICY_RULES = `COMPANY EXPENSE POLICY RULES:
-1. Alcohol: Alcohol purchases are only permitted when dining with a customer. Customer names and business purpose must be documented.
-2. Tips: Maximum 15% for services/porterage, maximum 20% for meals.
-3. Corporate card: No personal expenses. Only the named cardholder may use the card.
-4. Travel: Must use most cost-effective transport. Personal vehicle reimbursement at CRA km rate only.
-5. Parking tickets: Parking fines/tickets are not reimbursable.`;
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
+
+export function getLastScanViolations(): Violation[] {
+  return lastScanViolations;
+}
 
 function buildPrompt(
   batch: TxnRow[],
@@ -174,7 +171,16 @@ function buildPrompt(
     2,
   );
 
-  return `${POLICY_RULES}
+  const rules = loadPolicyRules();
+  const limits = loadPolicyLimits();
+  const rulesText = rules.length > 0
+    ? 'COMPANY EXPENSE POLICY RULES:\n' + rules.map((r, i) => `${i + 1}. ${r.name}: ${r.rule}`).join('\n')
+    : 'COMPANY EXPENSE POLICY RULES: (none defined)';
+  const limitsText = `CONFIGURED LIMITS:\n- Pre-authorization threshold: $${limits.preauthThreshold}\n- Max tip (services): ${limits.tipMaxServices}%\n- Max tip (meals): ${limits.tipMaxMeals}%`;
+
+  return `${rulesText}
+
+${limitsText}
 
 EMPLOYEE SPEND CONTEXT (last 30 days by category):
 ${contextLines}
@@ -253,24 +259,24 @@ router.post('/scan', async (_req, res, next) => {
     }
 
     // Step 2 — SQL-based rule checks (no Claude)
+    const limits = loadPolicyLimits();
     const allViolations: Violation[] = [];
 
-    // Pre-authorization: every debit > $50 is flagged
-    const preauthRows = preauthStmt.all({ since_date: sinceDate }) as unknown as PreauthRow[];
+    const preauthRows = preauthStmt.all({ since_date: sinceDate, threshold: limits.preauthThreshold }) as unknown as PreauthRow[];
     for (const row of preauthRows) {
       allViolations.push({
         transaction_code: row.transaction_code,
         employee_name: row.employee_name ?? '',
         violation_type: 'preauth_required',
-        policy_rule_cited: 'Expenses > $50 require manager pre-authorization and receipts.',
+        policy_rule_cited: `Expenses > $${limits.preauthThreshold} require manager pre-authorization and receipts.`,
         severity: 'medium',
-        reasoning: `$${(row.amount ?? 0).toFixed(2)} charge at ${row.merchant_name} (${row.category_label}) on ${row.posting_date} exceeds the $50 pre-authorization threshold.`,
+        reasoning: `$${(row.amount ?? 0).toFixed(2)} charge at ${row.merchant_name} (${row.category_label}) on ${row.posting_date} exceeds the $${limits.preauthThreshold} pre-authorization threshold.`,
         is_repeat_offender: false,
       });
     }
 
-    // Split-charge detection
-    const splitCharges = splitChargeStmt.all({ since_date: sinceDate }) as unknown as SplitChargeRow[];
+    const windowDays = limits.splitChargeWindowHours / 24;
+    const splitCharges = splitChargeStmt.all({ since_date: sinceDate, window_days: windowDays }) as unknown as SplitChargeRow[];
     for (const sc of splitCharges) {
       allViolations.push({
         transaction_code: sc.code1,
@@ -279,7 +285,7 @@ router.post('/scan', async (_req, res, next) => {
         policy_rule_cited:
           'Expenses must not be split across multiple transactions to circumvent the pre-authorization threshold.',
         severity: 'high',
-        reasoning: `Potential split charge: $${(sc.amount1 ?? 0).toFixed(2)} at ${sc.merchant_name} on ${sc.date1} and $${(sc.amount2 ?? 0).toFixed(2)} on ${sc.date2} (same employee, same merchant, within 48h, amounts within 10%).`,
+        reasoning: `Potential split charge: $${(sc.amount1 ?? 0).toFixed(2)} at ${sc.merchant_name} on ${sc.date1} and $${(sc.amount2 ?? 0).toFixed(2)} on ${sc.date2} (same employee, same merchant, within ${limits.splitChargeWindowHours}h, amounts within 10%).`,
         is_repeat_offender: false,
         related_transactions: [
           { transaction_code: sc.code1, amount: sc.amount1 ?? 0, date: sc.date1 ?? '', merchant: sc.merchant_name ?? '' },

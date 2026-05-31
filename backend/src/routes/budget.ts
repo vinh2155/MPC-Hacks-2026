@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { db } from '../db';
-import { TOTAL_BUDGET } from '../lib/config';
+import { loadPolicyLimits } from './policy';
 
 const router = Router();
 
@@ -33,10 +33,11 @@ router.get('/summary', (_req, res, next) => {
     const byCategory = (byCategoryStmt.all({}) as { label: string; amount: number }[])
       .map(r => ({ label: r.label, amount: parseFloat(r.amount.toFixed(2)) }));
 
+    const totalBudget = loadPolicyLimits().totalBudget;
     res.json({
       totalSpend,
-      totalBudget: TOTAL_BUDGET,
-      utilizationPct: parseFloat(((totalSpend / TOTAL_BUDGET) * 100).toFixed(1)),
+      totalBudget,
+      utilizationPct: parseFloat(((totalSpend / totalBudget) * 100).toFixed(1)),
       byCategory,
     });
   } catch (err) {

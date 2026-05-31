@@ -1,20 +1,21 @@
 import { useState } from 'react'
 import { RoleProvider, useRole } from './context/RoleContext'
 import { BudgetProvider } from './context/BudgetContext'
-import { ComplianceProvider, useCompliance } from './context/ComplianceContext'
 import BudgetPage from './pages/BudgetPage'
 import ChatPage from './pages/ChatPage'
-import CompliancePage from './pages/CompliancePage'
+import PolicyPage from './pages/PolicyPage'
 import ApprovalsPage from './pages/ApprovalsPage'
 import ReportsPage from './pages/ReportsPage'
+import TransactionsPage from './pages/TransactionsPage'
 import EmployeeRequestPage from './pages/EmployeeRequestPage'
 
-type ManagerTab = 'budget' | 'chat' | 'compliance' | 'approvals' | 'reports'
+type ManagerTab = 'budget' | 'chat' | 'policy' | 'approvals' | 'reports' | 'transactions'
 
 const MANAGER_TABS: { id: ManagerTab; label: string }[] = [
   { id: 'budget', label: 'Budget Tracker' },
   { id: 'chat', label: 'Chat' },
-  { id: 'compliance', label: 'Compliance' },
+  { id: 'transactions', label: 'Transactions' },
+  { id: 'policy', label: 'Policy' },
   { id: 'approvals', label: 'Approvals Inbox' },
   { id: 'reports', label: 'Reports' },
 ]
@@ -47,7 +48,8 @@ function ManagerView({ activeTab, setActiveTab }: {
       <main className="mx-auto max-w-7xl">
         <div className={activeTab !== 'budget' ? 'hidden' : ''}><BudgetPage /></div>
         <div className={activeTab !== 'chat' ? 'hidden' : ''}><ChatPage /></div>
-        <div className={activeTab !== 'compliance' ? 'hidden' : ''}><CompliancePage /></div>
+        <div className={activeTab !== 'transactions' ? 'hidden' : ''}><TransactionsPage /></div>
+        <div className={activeTab !== 'policy' ? 'hidden' : ''}><PolicyPage /></div>
         {activeTab === 'approvals' && <ApprovalsPage />}
         <div className={activeTab !== 'reports' ? 'hidden' : ''}><ReportsPage /></div>
       </main>
@@ -55,15 +57,8 @@ function ManagerView({ activeTab, setActiveTab }: {
   )
 }
 
-function scoreColorClass(score: number): string {
-  if (score >= 90) return 'text-emerald-600 bg-emerald-50'
-  if (score >= 75) return 'text-amber-600 bg-amber-50'
-  return 'text-red-600 bg-red-50'
-}
-
 function AppShell() {
   const { role, toggleRole } = useRole()
-  const { scoreData } = useCompliance()
   const [activeTab, setActiveTab] = useState<ManagerTab>('budget')
 
   return (
@@ -72,11 +67,6 @@ function AppShell() {
         <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
           <span className="text-xl font-bold text-gray-900">Brianna</span>
           <div className="flex items-center gap-4">
-            {role === 'manager' && (
-              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${scoreData ? scoreColorClass(scoreData.score) : 'text-gray-500 bg-gray-100'}`}>
-                Compliance: {scoreData ? `${scoreData.score}%` : '--'}
-              </span>
-            )}
             <button
               onClick={toggleRole}
               className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
@@ -100,11 +90,9 @@ function AppShell() {
 export default function App() {
   return (
     <RoleProvider>
-      <ComplianceProvider>
-        <BudgetProvider>
-          <AppShell />
-        </BudgetProvider>
-      </ComplianceProvider>
+      <BudgetProvider>
+        <AppShell />
+      </BudgetProvider>
     </RoleProvider>
   )
 }

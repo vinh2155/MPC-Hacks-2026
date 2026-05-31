@@ -1,0 +1,36 @@
+{
+  "rules": [
+    {
+      "id": "alcohol",
+      "name": "Alcohol",
+      "rule": "Alcohol purchases are only permitted when dining with a customer. Customer names and business purpose must be documented."
+    },
+    {
+      "id": "tips",
+      "name": "Tips",
+      "rule": "Maximum tip percentages apply for services and meals (see configured limits). Tips above threshold require manager approval."
+    },
+    {
+      "id": "corporate_card",
+      "name": "Corporate Card",
+      "rule": "No personal expenses. Only the named cardholder may use the card."
+    },
+    {
+      "id": "travel",
+      "name": "Travel",
+      "rule": "Must use most cost-effective transport. Personal vehicle reimbursement at CRA km rate only."
+    },
+    {
+      "id": "parking",
+      "name": "Parking",
+      "rule": "Parking fines/tickets are not reimbursable. Parking fees at business locations are allowed."
+    }
+  ],
+  "limits": {
+    "totalBudget": 3000000,
+    "preauthThreshold": 50,
+    "tipMaxServices": 15,
+    "tipMaxMeals": 20,
+    "splitChargeWindowHours": 48
+  }
+}
