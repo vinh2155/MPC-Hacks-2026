@@ -85,7 +85,7 @@ function formatHistory(history: Message[]): string {
 
 // ── Route ─────────────────────────────────────────────────────────────────────
 
-router.post('/', async (req, res) => {
+router.post('/', async (req, res, next) => {
   try {
     const parsed = ChatRequestSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -187,11 +187,10 @@ Return JSON with ALL of these fields:
 
     res.json({ ...response, metadata: { ...response.metadata, rowsAnalyzed: rows.length } });
   } catch (err) {
-    const ce = err as ClaudeError;
-    const details = ce?.error !== undefined && ce?.raw !== undefined
-      ? ce.error
-      : err instanceof Error ? err.message : String(err);
-    return void res.status(502).json({ error: 'AI processing failed', details });
+    if (typeof err === 'object' && err !== null && 'raw' in err) {
+      return void res.status(502).json({ error: 'AI processing failed', details: (err as ClaudeError).error });
+    }
+    next(err);
   }
 });
 

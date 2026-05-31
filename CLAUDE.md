@@ -179,3 +179,5 @@ Rows marked ✓ are implemented; the rest are planned (no route file yet).
 - **Repeat offender computed post-hoc** — Claude always returns `is_repeat_offender: false`; server counts violations per employee across all batches after merging, then overrides (≥3 violations → true)
 - **Concurrent scan guard** — module-level `scanInProgress` flag in `compliance.ts` returns 409 if a scan is already running; reset in `finally`
 - **Vite proxy** — `frontend/vite.config.ts` proxies `/api` → `http://localhost:3001` to avoid CORS in dev
+- **Employee report team average hardcoded to 8** — `teamAverageSpend = allTimeSpend / 8` in `reports.ts`; not derived from DISTINCT employee count. Changing the dataset's employees requires updating this constant.
+- **Employee name prompt injection guard** — `reports.ts` sanitizes `employeeName` with `.replace(/[\r\n]/g, ' ').slice(0, 100)` before embedding in the Claude prompt; apply the same pattern to any user-supplied string going into a prompt.

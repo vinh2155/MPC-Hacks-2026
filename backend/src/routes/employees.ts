@@ -12,9 +12,13 @@ const employeesStmt = db.prepare(`
   ORDER BY employee_name
 `);
 
-router.get('/', (_req, res) => {
-  const rows = employeesStmt.all({}) as unknown as EmployeeRow[];
-  res.json(rows.map(r => r.employee_name));
+router.get('/', (_req, res, next) => {
+  try {
+    const rows = employeesStmt.all({}) as unknown as EmployeeRow[];
+    res.json(rows.map(r => r.employee_name));
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;
