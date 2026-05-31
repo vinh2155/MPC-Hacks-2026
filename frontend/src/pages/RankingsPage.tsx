@@ -50,11 +50,11 @@ function scoreStyle(score: number) {
   return              { bg: 'rgba(245,88,88,0.12)',   text: '#F55858',  border: 'rgba(245,88,88,0.25)',   grade: 'F' }
 }
 
-function rankMedal(rank: number) {
-  if (rank === 1) return '🥇'
-  if (rank === 2) return '🥈'
-  if (rank === 3) return '🥉'
-  return `#${rank}`
+function rankStyle(rank: number): { color: string; bg: string; border: string } {
+  if (rank === 1) return { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', border: 'rgba(245,158,11,0.3)' }
+  if (rank === 2) return { color: '#94A3B8', bg: 'rgba(148,163,184,0.12)', border: 'rgba(148,163,184,0.3)' }
+  if (rank === 3) return { color: '#CD7C4B', bg: 'rgba(205,124,75,0.12)', border: 'rgba(205,124,75,0.3)' }
+  return { color: 'var(--text-muted)', bg: 'transparent', border: 'transparent' }
 }
 
 const selectStyle = {
@@ -188,10 +188,15 @@ export default function RankingsPage() {
                   style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
                 >
                   <div className="flex items-center gap-5">
-                    {/* Rank medal */}
-                    <div className="flex-shrink-0 w-10 text-center text-lg font-bold tabular-nums" style={{ color: 'var(--text-muted)' }}>
-                      {rankMedal(emp.rank)}
-                    </div>
+                    {/* Rank badge */}
+                    {(() => { const rs = rankStyle(emp.rank); return (
+                      <div
+                        className="flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center text-sm font-bold tabular-nums"
+                        style={{ color: rs.color, backgroundColor: rs.bg, border: `1px solid ${rs.border}` }}
+                      >
+                        #{emp.rank}
+                      </div>
+                    );})()
 
                     {/* Score badge */}
                     <div

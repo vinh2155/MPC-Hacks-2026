@@ -193,16 +193,6 @@ export default function EmployeeRequestPage() {
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
-      {/* Icon above form */}
-      <div className="flex justify-center mb-6">
-        <div
-          className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl"
-          style={{ backgroundColor: 'rgba(79,130,247,0.12)' }}
-        >
-          🚚
-        </div>
-      </div>
-
       <div
         className="w-full max-w-md rounded-2xl p-8"
         style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
