@@ -361,10 +361,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div
-      className="flex flex-col"
-      style={{ height: 'calc(100vh - 3.5rem)' }}
-    >
+    <div className="flex flex-col h-[calc(100vh-3.5rem)] lg:h-screen">
       {/* Scrollable message thread */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages.length === 0 && <EmptyState onSelect={text => void sendMessage(text)} />}
