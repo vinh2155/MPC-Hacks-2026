@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { RoleProvider, useRole } from './context/RoleContext'
 import { BudgetProvider } from './context/BudgetContext'
 import BudgetPage from './pages/BudgetPage'
@@ -15,8 +15,11 @@ import type { ManagerTab } from './lib/types'
 
 function usePendingCount() {
   const [count, setCount] = useState(0)
+  const fetchingRef = useRef(false)
 
   function poll() {
+    if (fetchingRef.current) return
+    fetchingRef.current = true
     fetch('/api/requests')
       .then(r => r.ok ? r.json() : [])
       .then((data: unknown) => {
@@ -25,6 +28,7 @@ function usePendingCount() {
         }
       })
       .catch(() => {})
+      .finally(() => { fetchingRef.current = false })
   }
 
   useEffect(() => {

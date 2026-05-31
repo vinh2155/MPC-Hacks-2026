@@ -391,9 +391,6 @@ router.post('/employee', async (req, res, next) => {
     const preauthCount = (empPreauthCountStmt.get({ name: employeeName, since: sinceDate }) as unknown as ViolationCountRow).cnt ?? 0;
     const splitPairCount = (empSplitPairCountStmt.get({ name: employeeName, since: sinceDate }) as unknown as ViolationCountRow).cnt ?? 0;
 
-    // C3: strip newlines and cap length before embedding in prompt to prevent injection
-    const safeEmployeeName = employeeName.replace(/[\r\n]/g, ' ').slice(0, 100);
-
     // Build prompt
     const diffPct = teamAverageSpend > 0
       ? Math.round(((totalSpend - teamAverageSpend) / teamAverageSpend) * 100)
@@ -414,7 +411,7 @@ router.post('/employee', async (req, res, next) => {
 
     const prompt = `You are writing an employee spend profile for a trucking company manager.
 
-EMPLOYEE: ${safeEmployeeName}
+EMPLOYEE: ${JSON.stringify(employeeName)}
 TOTAL SPEND (all-time): $${totalSpend.toFixed(2)}
 TEAM AVERAGE SPEND: $${teamAverageSpend.toFixed(2)} — this employee is ${diffLabel} the team average
 
