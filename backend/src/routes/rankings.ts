@@ -90,13 +90,37 @@ function sinceDate(period: Period, maxDate: string): string {
   return d.toISOString().split('T')[0];
 }
 
-// Scoring: base 100, deduct for violations (caps prevent single type from zeroing the score alone)
-function computeScore(preauthViolations: number, splitPairCount: number, deniedRequests: number): number {
-  const deductions =
-    Math.min(preauthViolations * 8, 40) +   // -8 each, max -40
-    Math.min(splitPairCount * 12, 36) +      // -12 each, max -36
-    Math.min(deniedRequests * 5, 15);        // -5 each, max -15
-  return Math.max(0, 100 - deductions);
+// Raw penalty: higher = worse employee. Weights chosen so violations and
+// spend-vs-average both contribute, giving natural spread across employees.
+function rawPenalty(
+  preauthViolations: number,
+  splitPairCount: number,
+  deniedRequests: number,
+  totalSpend: number,
+  teamAvgSpend: number,
+): number {
+  let p = preauthViolations * 4 + splitPairCount * 20 + deniedRequests * 10;
+  if (teamAvgSpend > 0) {
+    const ratio = totalSpend / teamAvgSpend;
+    if      (ratio > 2.0)  p += 20;
+    else if (ratio > 1.5)  p += 12;
+    else if (ratio > 1.25) p += 6;
+  }
+  return p;
+}
+
+// Normalize raw penalties across all employees so that the best maps to
+// SCORE_MAX (95) and the worst to SCORE_MIN (40). Relative order is preserved.
+const SCORE_MAX = 95;
+const SCORE_MIN = 40;
+
+function normalizeScores(penalties: number[]): number[] {
+  const lo = Math.min(...penalties);
+  const hi = Math.max(...penalties);
+  if (lo === hi) return penalties.map(() => Math.round((SCORE_MAX + SCORE_MIN) / 2));
+  return penalties.map(p =>
+    Math.round(SCORE_MAX - (p - lo) / (hi - lo) * (SCORE_MAX - SCORE_MIN))
+  );
 }
 
 // ── Route ──────────────────────────────────────────────────────────────────────
@@ -130,30 +154,37 @@ router.get('/', (req, res) => {
     if (r.status === 'denied')   entry.denied   = r.cnt;
   }
 
-  const employees = allEmployees.map(name => {
-    const spend           = spendMap.get(name);
+  const baseEmployees = allEmployees.map(name => {
+    const spend             = spendMap.get(name);
     const preauthViolations = preauthMap.get(name) ?? 0;
     const splitPairCount    = splitMap.get(name)   ?? 0;
     const requests          = requestMap.get(name) ?? { approved: 0, denied: 0 };
     return {
       name,
-      totalSpend:        spend?.total_spend        ?? 0,
-      transactionCount:  spend?.transaction_count  ?? 0,
+      totalSpend:       spend?.total_spend       ?? 0,
+      transactionCount: spend?.transaction_count ?? 0,
       preauthViolations,
       splitPairCount,
-      approvedRequests:  requests.approved,
-      deniedRequests:    requests.denied,
-      score: computeScore(preauthViolations, splitPairCount, requests.denied),
+      approvedRequests: requests.approved,
+      deniedRequests:   requests.denied,
     };
   });
+
+  const teamAverageSpend = baseEmployees.length
+    ? baseEmployees.reduce((s, e) => s + e.totalSpend, 0) / baseEmployees.length
+    : 0;
+
+  // Compute & normalize scores across all employees so best→95, worst→40
+  const penalties = baseEmployees.map(e =>
+    rawPenalty(e.preauthViolations, e.splitPairCount, e.deniedRequests, e.totalSpend, teamAverageSpend)
+  );
+  const scores = normalizeScores(penalties);
+
+  const employees = baseEmployees.map((e, i) => ({ ...e, score: scores[i] }));
 
   // Rank by score descending; ties broken alphabetically
   const ranked = [...employees].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
   const rankMap = new Map(ranked.map((e, i) => [e.name, i + 1]));
-
-  const teamAverageSpend = employees.length
-    ? employees.reduce((s, e) => s + e.totalSpend, 0) / employees.length
-    : 0;
 
   res.json({
     period: safePeriod,
@@ -206,7 +237,7 @@ router.post('/insights', async (req, res, next) => {
       if (r.status === 'denied')   entry.denied   = r.cnt;
     }
 
-    const employees = allEmployees.map(name => {
+    const baseEmployees = allEmployees.map(name => {
       const spend             = spendMap.get(name);
       const preauthViolations = preauthMap.get(name) ?? 0;
       const splitPairCount    = splitMap.get(name)   ?? 0;
@@ -214,13 +245,21 @@ router.post('/insights', async (req, res, next) => {
       const topCats           = (catMap.get(name) ?? []).slice(0, 3);
       return { name, totalSpend: spend?.total_spend ?? 0, transactionCount: spend?.transaction_count ?? 0,
                preauthViolations, splitPairCount, topCats,
-               approvedRequests: requests.approved, deniedRequests: requests.denied,
-               score: computeScore(preauthViolations, splitPairCount, requests.denied) };
+               approvedRequests: requests.approved, deniedRequests: requests.denied };
     });
+
+    const teamAvg = baseEmployees.length
+      ? baseEmployees.reduce((s, e) => s + e.totalSpend, 0) / baseEmployees.length
+      : 0;
+
+    const insightPenalties = baseEmployees.map(e =>
+      rawPenalty(e.preauthViolations, e.splitPairCount, e.deniedRequests, e.totalSpend, teamAvg)
+    );
+    const insightScores = normalizeScores(insightPenalties);
+    const employees = baseEmployees.map((e, i) => ({ ...e, score: insightScores[i] }));
 
     const ranked = [...employees].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
     const rankMap = new Map(ranked.map((e, i) => [e.name, i + 1]));
-    const teamAvg = employees.length ? employees.reduce((s, e) => s + e.totalSpend, 0) / employees.length : 0;
 
     const lines = employees.map(e => {
       const rank   = rankMap.get(e.name)!;
