@@ -3,6 +3,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://mpc-hacks-2026.onrender.com/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
