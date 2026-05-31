@@ -98,7 +98,7 @@ Implemented files are listed without annotation. Planned-but-not-yet-created fil
 
 ```
 backend/src/
-  index.ts              — Express entry; mounts /api/budget, /api/chat, /api/health, /api/debug/transactions
+  index.ts              — Express entry; mounts /api/budget, /api/chat, /api/compliance, /api/requests, /api/health, /api/debug/transactions
                           Add new routers here as routes/ files are created
   db/index.ts           — SQLite init, loads xlsx, exports db instance
   lib/claude.ts         — askClaude<T> wrapper with Zod + retry
@@ -106,8 +106,8 @@ backend/src/
   routes/
     budget.ts           — GET /api/budget/summary (txn spend + approved requests)
     chat.ts             — POST /api/chat (4-step AI chain)
-    compliance.ts       — [planned] POST /api/compliance/scan, GET /api/compliance/score
-    requests.ts         — [planned] CRUD + POST /api/requests/:id/recommendation
+    compliance.ts       — POST /api/compliance/scan (batched Claude policy scan, BATCH_SIZE=50, MAX_CONCURRENT=5), GET /api/compliance/score
+    requests.ts         — POST /api/requests, GET /api/requests, GET /api/requests/:id, PATCH /api/requests/:id (status update)
     reports.ts          — [planned] POST /api/reports/period, POST /api/reports/employee
     employees.ts        — [planned] GET /api/employees
 
@@ -123,7 +123,7 @@ frontend/src/
     CompliancePage.tsx      — [stub] Issue #11/#12
     ApprovalsPage.tsx       — [stub] Issue #14/#15
     ReportsPage.tsx         — [stub] Issue #16/#17/#18
-    EmployeeRequestPage.tsx — [stub] Issue #13
+    EmployeeRequestPage.tsx — request form (employee name + item + amount + category + reason); pending/approved/denied status screen with 5s polling
   components/
     BudgetGauge.tsx     — animated fill bar + category breakdown modal (pie chart inline, top-8 + Other grouping); consumes BudgetContext
 ```
@@ -138,12 +138,12 @@ Rows marked ✓ are implemented; the rest are planned (no route file yet).
 | ✓ | GET | `/api/budget/summary` | Total spend, budget, utilization %, by-category |
 | ✓ | GET | `/api/debug/transactions` | `?limit=N` — dev only |
 | ✓ | POST | `/api/chat` | 4-step AI chain: `{ message, history }` |
-| | POST | `/api/compliance/scan` | Batch policy scan, returns violations array |
-| | GET | `/api/compliance/score` | `{ score, totalTransactions, violationCount }` |
-| | POST | `/api/requests` | Submit employee request, returns `{ id }` |
-| | GET | `/api/requests` | All requests, newest first |
-| | GET | `/api/requests/:id` | Single request |
-| | PATCH | `/api/requests/:id` | Update status to approved/denied |
+| ✓ | POST | `/api/compliance/scan` | Batch policy scan, returns violations array |
+| ✓ | GET | `/api/compliance/score` | `{ score, totalTransactions, violationCount }` |
+| ✓ | POST | `/api/requests` | Submit employee request, returns `{ id }` |
+| ✓ | GET | `/api/requests` | All requests, newest first |
+| ✓ | GET | `/api/requests/:id` | Single request |
+| ✓ | PATCH | `/api/requests/:id` | Update status to approved/denied |
 | | POST | `/api/requests/:id/recommendation` | Claude approve/deny/escalate with reasoning |
 | | POST | `/api/reports/period` | `{ period: "weekly"\|"monthly" }` → exec memo |
 | | POST | `/api/reports/employee` | `{ employeeName }` → spend profile |
