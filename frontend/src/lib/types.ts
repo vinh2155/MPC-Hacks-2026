@@ -1,3 +1,5 @@
+export type ManagerTab = 'budget' | 'chat' | 'policy' | 'approvals' | 'reports' | 'transactions' | 'compliance' | 'rankings'
+
 export interface Request {
   id: string
   employee_name: string

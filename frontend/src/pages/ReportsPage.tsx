@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { fmtCurrency } from '../lib/format'
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
 type ReportMode = 'period' | 'employee'
 type PeriodOption = 'weekly' | 'monthly'
 
@@ -37,8 +35,6 @@ interface EmployeeReport {
     splitPairCount: number
   }
 }
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function printReportAsPdf(title: string, subtitle: string, stats: { label: string; value: string }[], narrative: string) {
   const statsHtml = stats.map(s => `
@@ -126,9 +122,16 @@ function StatsStrip({ stats }: { stats: { label: string; value: string }[] }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
       {stats.map(s => (
-        <div key={s.label} className="rounded-lg bg-gray-50 px-4 py-3">
-          <p className="text-xs text-gray-500">{s.label}</p>
-          <p className="text-lg font-bold text-gray-900 tabular-nums">{s.value}</p>
+        <div
+          key={s.label}
+          className="rounded-lg px-4 py-3"
+          style={{
+            backgroundColor: 'var(--bg-elevated)',
+            border: '1px solid var(--border-subtle)',
+          }}
+        >
+          <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
+          <p className="text-lg font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>{s.value}</p>
         </div>
       ))}
     </div>
@@ -137,15 +140,13 @@ function StatsStrip({ stats }: { stats: { label: string; value: string }[] }) {
 
 function NarrativeBlock({ text }: { text: string }) {
   return (
-    <div className="space-y-4 text-sm text-gray-700 leading-relaxed">
+    <div className="space-y-4 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
       {text.split(/\n\n+/).map((p, i) => (
         <p key={i}>{p.trim()}</p>
       ))}
     </div>
   )
 }
-
-// ── ReportsPage ───────────────────────────────────────────────────────────────
 
 export default function ReportsPage() {
   const [mode, setMode] = useState<ReportMode>('period')
@@ -163,16 +164,10 @@ export default function ReportsPage() {
   useEffect(() => {
     const controller = new AbortController()
     fetch('/api/employees', { signal: controller.signal })
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`)
-        return r.json()
-      })
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() })
       .then((data: unknown) => {
-        if (Array.isArray(data)) {
-          setEmployees(data as string[])
-        } else {
-          setEmployeesError('Unexpected response loading employees.')
-        }
+        if (Array.isArray(data)) setEmployees(data as string[])
+        else setEmployeesError('Unexpected response loading employees.')
       })
       .catch(err => {
         if ((err as Error).name === 'AbortError') return
@@ -185,8 +180,6 @@ export default function ReportsPage() {
   }, [])
 
   async function generate() {
-    // C3: synchronous in-flight guard — prevents concurrent calls on rapid double-click
-    // before React commits the disabled state to the DOM
     if (inFlight.current) return
     inFlight.current = true
     setError(null)
@@ -239,24 +232,31 @@ export default function ReportsPage() {
 
   const activeReport = mode === 'period' ? periodReport : employeeReport
 
+  const segmentBase = 'px-5 py-1.5 text-sm font-medium rounded-md transition-colors'
+  const segmentActive = 'text-[var(--text-primary)]'
+  const segmentInactive = 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+
   return (
-    <div className="p-8">
+    <div className="p-6 lg:p-8">
       <header className="mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">Reports</h2>
-        <p className="text-sm text-gray-500 mt-1">Generate period summaries or employee spend profiles.</p>
+        <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Reports</h2>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Generate period summaries or employee spend profiles.</p>
       </header>
 
       {/* Mode segmented control */}
-      <div className="inline-flex rounded-lg border border-gray-200 bg-gray-100 p-1 mb-6">
+      <div
+        className="inline-flex rounded-lg p-1 mb-6"
+        style={{
+          border: '1px solid var(--border-default)',
+          backgroundColor: 'var(--bg-elevated)',
+        }}
+      >
         {(['period', 'employee'] as const).map(m => (
           <button
             key={m}
             onClick={() => { setMode(m); setError(null) }}
-            className={`px-5 py-1.5 text-sm font-medium rounded-md transition-colors ${
-              mode === m
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
+            className={`${segmentBase} ${mode === m ? segmentActive : segmentInactive}`}
+            style={mode === m ? { backgroundColor: 'var(--bg-surface)' } : {}}
           >
             {m === 'period' ? 'Period Report' : 'Employee Report'}
           </button>
@@ -267,19 +267,19 @@ export default function ReportsPage() {
       <div className="flex items-end gap-3 mb-6 flex-wrap">
         {mode === 'period' && (
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+            <label className="block text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: 'var(--text-muted)' }}>
               Period
             </label>
-            <div className="inline-flex rounded-lg border border-gray-200 bg-gray-100 p-1">
+            <div
+              className="inline-flex rounded-lg p-1"
+              style={{ border: '1px solid var(--border-default)', backgroundColor: 'var(--bg-elevated)' }}
+            >
               {(['weekly', 'monthly'] as const).map(p => (
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                    period === p
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
+                  className={`${segmentBase} ${period === p ? segmentActive : segmentInactive}`}
+                  style={period === p ? { backgroundColor: 'var(--bg-surface)' } : {}}
                 >
                   {p === 'weekly' ? 'Weekly' : 'Monthly'}
                 </button>
@@ -290,20 +290,24 @@ export default function ReportsPage() {
 
         {mode === 'employee' && (
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+            <label className="block text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: 'var(--text-muted)' }}>
               Employee
             </label>
             <select
               value={selectedEmployee}
               onChange={e => setSelectedEmployee(e.target.value)}
-              className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[180px]"
+              className="rounded-lg px-3 py-2 text-sm focus:outline-none min-w-[180px]"
+              style={{
+                border: '1px solid var(--border-default)',
+                backgroundColor: 'var(--bg-elevated)',
+                color: 'var(--text-primary)',
+              }}
             >
               <option value="">Select employee…</option>
               {employees.map(n => <option key={n} value={n}>{n}</option>)}
             </select>
-            {/* C1: surface fetch failure so user isn't silently stuck with an empty dropdown */}
             {employeesError && (
-              <p className="text-xs text-red-500 mt-1">{employeesError}</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--accent-red)' }}>{employeesError}</p>
             )}
           </div>
         )}
@@ -311,36 +315,51 @@ export default function ReportsPage() {
         <button
           onClick={() => void generate()}
           disabled={loading || (mode === 'employee' && !selectedEmployee)}
-          className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="rounded-lg px-5 py-2 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition-opacity hover:opacity-90"
+          style={{ backgroundColor: 'var(--accent)' }}
         >
           {loading ? 'Generating…' : 'Generate'}
         </button>
       </div>
 
-      {/* Loading */}
       {loading && (
-        <div className="flex items-center gap-3 text-sm text-gray-500 mb-6">
-          <span className="inline-block w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+        <div className="flex items-center gap-3 text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+          <span
+            className="inline-block w-5 h-5 border-2 border-t-transparent rounded-full animate-spin"
+            style={{ borderColor: 'var(--accent)', borderTopColor: 'transparent' }}
+          />
           Generating report — this may take up to 15s…
         </div>
       )}
 
-      {/* Error */}
       {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm mb-6">
+        <div
+          className="rounded-lg px-4 py-3 text-sm mb-6"
+          style={{
+            backgroundColor: 'rgba(245,88,88,0.10)',
+            border: '1px solid rgba(245,88,88,0.30)',
+            color: 'var(--accent-red)',
+          }}
+        >
           {error}
         </div>
       )}
 
-      {/* Period report card */}
       {mode === 'period' && periodReport && (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <div
+          className="rounded-xl p-6"
+          style={{
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
+            animation: 'fade-in-up 0.3s ease-out',
+          }}
+        >
           <div className="flex items-start justify-between gap-4 mb-5">
             <div>
-              <h3 className="text-base font-semibold text-gray-900">
+              <h3 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
                 {periodReport.period === 'weekly' ? 'Weekly' : 'Monthly'} Report
               </h3>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
                 Generated {new Date(periodReport.generatedAt).toLocaleString()}
               </p>
             </div>
@@ -356,7 +375,12 @@ export default function ReportsPage() {
                 ],
                 periodReport.narrative,
               )}
-              className="flex-shrink-0 rounded-md border border-gray-200 px-4 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              className="flex-shrink-0 rounded-lg px-4 py-1.5 text-sm font-medium transition-opacity hover:opacity-80"
+              style={{
+                border: '1px solid var(--border-default)',
+                color: 'var(--text-secondary)',
+                backgroundColor: 'var(--bg-elevated)',
+              }}
             >
               Download PDF
             </button>
@@ -367,20 +391,26 @@ export default function ReportsPage() {
             { label: 'Pre-auth flags', value: String(periodReport.data.preauthCount) },
             { label: 'Approved requests', value: String(periodReport.data.approvedCount) },
           ]} />
-          <hr className="border-gray-100 mb-5" />
+          <hr style={{ borderColor: 'var(--border-subtle)', margin: '0 0 20px' }} />
           <NarrativeBlock text={periodReport.narrative} />
         </div>
       )}
 
-      {/* Employee report card */}
       {mode === 'employee' && employeeReport && (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <div
+          className="rounded-xl p-6"
+          style={{
+            backgroundColor: 'var(--bg-surface)',
+            border: '1px solid var(--border-subtle)',
+            animation: 'fade-in-up 0.3s ease-out',
+          }}
+        >
           <div className="flex items-start justify-between gap-4 mb-5">
             <div>
-              <h3 className="text-base font-semibold text-gray-900">
+              <h3 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
                 {employeeReport.employeeName} — Spend Profile
               </h3>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
                 Generated {new Date(employeeReport.generatedAt).toLocaleString()}
               </p>
             </div>
@@ -396,7 +426,12 @@ export default function ReportsPage() {
                 ],
                 employeeReport.narrative,
               )}
-              className="flex-shrink-0 rounded-md border border-gray-200 px-4 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+              className="flex-shrink-0 rounded-lg px-4 py-1.5 text-sm font-medium transition-opacity hover:opacity-80"
+              style={{
+                border: '1px solid var(--border-default)',
+                color: 'var(--text-secondary)',
+                backgroundColor: 'var(--bg-elevated)',
+              }}
             >
               Download PDF
             </button>
@@ -407,14 +442,13 @@ export default function ReportsPage() {
             { label: 'Pre-auth flags', value: String(employeeReport.data.preauthCount) },
             { label: 'Requests submitted', value: String(employeeReport.data.requests.length) },
           ]} />
-          <hr className="border-gray-100 mb-5" />
+          <hr style={{ borderColor: 'var(--border-subtle)', margin: '0 0 20px' }} />
           <NarrativeBlock text={employeeReport.narrative} />
         </div>
       )}
 
-      {/* Empty state */}
       {!activeReport && !loading && !error && (
-        <p className="text-sm text-gray-400">Configure your report above and click Generate.</p>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Configure your report above and click Generate.</p>
       )}
     </div>
   )

@@ -25,9 +25,35 @@ const EMPTY_FORM = {
 }
 
 function statusConfig(status: RequestRow['status']) {
-  if (status === 'approved') return { cls: 'text-emerald-600 bg-emerald-50', label: 'Approved' }
-  if (status === 'denied') return { cls: 'text-red-600 bg-red-50', label: 'Denied' }
-  return { cls: 'text-amber-600 bg-amber-50', label: 'Awaiting Manager Review' }
+  if (status === 'approved') return {
+    cls: 'bg-[rgba(52,217,135,0.12)] text-[#34D987]',
+    label: 'Approved',
+  }
+  if (status === 'denied') return {
+    cls: 'bg-[rgba(245,88,88,0.12)] text-[#F55858]',
+    label: 'Denied',
+  }
+  return {
+    cls: 'bg-[rgba(245,166,35,0.12)] text-[#F5A623]',
+    label: 'Awaiting Review',
+  }
+}
+
+const inputClass = 'w-full rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#4F82F7]'
+const inputStyle = {
+  backgroundColor: 'var(--bg-elevated)',
+  border: '1px solid var(--border-default)',
+  color: 'var(--text-primary)',
+}
+
+const labelStyle = {
+  display: 'block',
+  fontSize: '11px',
+  fontWeight: '600' as const,
+  textTransform: 'uppercase' as const,
+  letterSpacing: '0.08em',
+  color: 'var(--text-muted)',
+  marginBottom: '6px',
 }
 
 export default function EmployeeRequestPage() {
@@ -40,9 +66,7 @@ export default function EmployeeRequestPage() {
 
   useEffect(() => {
     if (!submittedId) return
-
     let intervalId: ReturnType<typeof setInterval>
-
     const poll = async () => {
       try {
         const res = await fetch(`/api/requests/${submittedId}`)
@@ -52,11 +76,8 @@ export default function EmployeeRequestPage() {
         if (row.status === 'approved' || row.status === 'denied') {
           clearInterval(intervalId)
         }
-      } catch {
-        // silently retry
-      }
+      } catch { /* silently retry */ }
     }
-
     poll()
     intervalId = setInterval(poll, 5_000)
     return () => clearInterval(intervalId)
@@ -70,7 +91,6 @@ export default function EmployeeRequestPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-
     const { employee_name, item_description, amount, category, reason } = form
     if (!employee_name || !item_description || !category || !reason) {
       setValidationError('All fields are required.')
@@ -81,7 +101,6 @@ export default function EmployeeRequestPage() {
       setValidationError('Amount must be greater than $0.')
       return
     }
-
     setSubmitting(true)
     setSubmitError(null)
     try {
@@ -117,38 +136,53 @@ export default function EmployeeRequestPage() {
     const status = requestData?.status ?? 'pending'
     const sc = statusConfig(status)
     return (
-      <div className="p-8 max-w-lg mx-auto">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
+        <div
+          className="w-full max-w-md rounded-2xl p-8"
+          style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
+        >
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-gray-900">Request Submitted</h2>
+            <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Request Submitted</h2>
             <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${sc.cls}`}>
               {sc.label}
             </span>
           </div>
 
           {requestData && (
-            <ul className="space-y-2 text-sm text-gray-600 mb-6">
-              <li><span className="font-medium text-gray-800">Employee:</span> {requestData.employee_name}</li>
-              <li><span className="font-medium text-gray-800">Item:</span> {requestData.item_description}</li>
-              <li><span className="font-medium text-gray-800">Amount:</span> ${fmtCurrency(requestData.amount)}</li>
-              <li><span className="font-medium text-gray-800">Category:</span> {requestData.category}</li>
-              <li><span className="font-medium text-gray-800">Reason:</span> {requestData.reason}</li>
+            <ul className="space-y-2.5 text-sm mb-6">
+              {[
+                { label: 'Employee', value: requestData.employee_name },
+                { label: 'Item', value: requestData.item_description },
+                { label: 'Amount', value: `$${fmtCurrency(requestData.amount)}` },
+                { label: 'Category', value: requestData.category },
+                { label: 'Reason', value: requestData.reason },
+              ].map(({ label, value }) => (
+                <li key={label} className="flex gap-2">
+                  <span className="font-semibold min-w-[72px]" style={{ color: 'var(--text-secondary)' }}>{label}</span>
+                  <span style={{ color: 'var(--text-primary)' }}>{value}</span>
+                </li>
+              ))}
             </ul>
           )}
 
           {status === 'pending' && (
-            <p className="text-xs text-gray-400 mb-6">Checking for updates every 5s…</p>
+            <p className="text-xs mb-6" style={{ color: 'var(--text-muted)' }}>Checking for updates every 5s…</p>
           )}
 
           {(status === 'approved' || status === 'denied') && (
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
               Your request has been <span className="font-medium">{status}</span> by the manager.
             </p>
           )}
 
           <button
             onClick={reset}
-            className="w-full rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+            className="w-full rounded-lg px-4 py-2.5 text-sm font-medium transition-opacity hover:opacity-80"
+            style={{
+              border: '1px solid var(--border-default)',
+              color: 'var(--text-secondary)',
+              backgroundColor: 'var(--bg-elevated)',
+            }}
           >
             Submit another request
           </button>
@@ -158,22 +192,34 @@ export default function EmployeeRequestPage() {
   }
 
   return (
-    <div className="p-8 max-w-lg mx-auto">
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+    <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
+      {/* Icon above form */}
+      <div className="flex justify-center mb-6">
+        <div
+          className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl"
+          style={{ backgroundColor: 'rgba(79,130,247,0.12)' }}
+        >
+          🚚
+        </div>
+      </div>
+
+      <div
+        className="w-full max-w-md rounded-2xl p-8"
+        style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
+      >
         <div className="mb-6">
-          <p className="text-xs font-semibold tracking-widest text-gray-400 uppercase mb-1">Employee</p>
-          <h2 className="text-2xl font-bold text-gray-900">Submit a Request</h2>
+          <p style={{ ...labelStyle, marginBottom: '4px' }}>Employee</p>
+          <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Submit a Request</h2>
         </div>
 
-        <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-5">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-              Your Name
-            </label>
+            <label style={labelStyle}>Your Name</label>
             <select
               value={form.employee_name}
               onChange={e => setField('employee_name', e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
+              style={inputStyle}
             >
               <option value="">Select your name…</option>
               {EMPLOYEE_NAMES.map(n => <option key={n} value={n}>{n}</option>)}
@@ -181,22 +227,19 @@ export default function EmployeeRequestPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-              Item / Service
-            </label>
+            <label style={labelStyle}>Item / Service</label>
             <input
               type="text"
               placeholder="e.g. Replacement brake pads"
               value={form.item_description}
               onChange={e => setField('item_description', e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
+              style={{ ...inputStyle }}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-              Amount ($)
-            </label>
+            <label style={labelStyle}>Amount ($)</label>
             <input
               type="number"
               min="0.01"
@@ -204,18 +247,18 @@ export default function EmployeeRequestPage() {
               placeholder="0.00"
               value={form.amount}
               onChange={e => setField('amount', e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
+              style={inputStyle}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-              Category
-            </label>
+            <label style={labelStyle}>Category</label>
             <select
               value={form.category}
               onChange={e => setField('category', e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
+              style={inputStyle}
             >
               <option value="">Select a category…</option>
               {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -223,30 +266,29 @@ export default function EmployeeRequestPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-              Reason
-            </label>
+            <label style={labelStyle}>Reason</label>
             <textarea
               placeholder="Briefly explain why this expense is needed…"
               value={form.reason}
               onChange={e => setField('reason', e.target.value)}
               rows={3}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              className={`${inputClass} resize-none`}
+              style={inputStyle}
             />
           </div>
 
           {validationError && (
-            <p className="text-xs font-medium text-red-500">{validationError}</p>
+            <p className="text-xs font-medium" style={{ color: 'var(--accent-red)' }}>{validationError}</p>
           )}
-
           {submitError && (
-            <p className="text-xs font-medium text-red-500">{submitError}</p>
+            <p className="text-xs font-medium" style={{ color: 'var(--accent-red)' }}>{submitError}</p>
           )}
 
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="w-full rounded-lg px-4 py-3 text-sm font-semibold text-white disabled:opacity-50 transition-opacity hover:opacity-90"
+            style={{ backgroundColor: 'var(--accent)' }}
           >
             {submitting ? 'Submitting…' : 'Submit Request'}
           </button>

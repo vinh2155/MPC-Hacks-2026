@@ -33,23 +33,34 @@ interface TxnResponse {
 type SortCol = 'posting_date' | 'amount' | 'employee_name' | 'merchant_name' | 'severity'
 type SortDir = 'asc' | 'desc'
 
-const SEVERITY_COLORS: Record<string, string> = {
-  critical: 'text-red-700 bg-red-50',
-  high: 'text-orange-700 bg-orange-50',
-  medium: 'text-amber-700 bg-amber-50',
-  low: 'text-blue-700 bg-blue-50',
+const SEVERITY_COLORS: Record<string, { bg: string; text: string }> = {
+  critical: { bg: 'rgba(245,88,88,0.12)',    text: '#F55858' },
+  high:     { bg: 'rgba(255,153,102,0.12)',  text: '#FF9966' },
+  medium:   { bg: 'rgba(245,166,35,0.12)',   text: '#F5A623' },
+  low:      { bg: 'rgba(79,130,247,0.12)',   text: '#4F82F7' },
 }
 
 const SEVERITY_BORDER: Record<string, string> = {
-  critical: 'border-l-4 border-l-red-500',
-  high: 'border-l-4 border-l-orange-400',
-  medium: 'border-l-4 border-l-amber-400',
-  low: 'border-l-4 border-l-blue-400',
+  critical: '4px solid #F55858',
+  high:     '4px solid #FF9966',
+  medium:   '4px solid #F5A623',
+  low:      '4px solid #4F82F7',
 }
 
 function SortIcon({ col, sortBy, sortDir }: { col: SortCol; sortBy: SortCol; sortDir: SortDir }) {
-  if (sortBy !== col) return <span className="ml-1 text-gray-300">↕</span>
-  return <span className="ml-1">{sortDir === 'desc' ? '↓' : '↑'}</span>
+  if (sortBy !== col) return <span className="ml-1" style={{ color: 'var(--text-muted)' }}>↕</span>
+  return <span className="ml-1" style={{ color: 'var(--accent)' }}>{sortDir === 'desc' ? '↓' : '↑'}</span>
+}
+
+const filterInputStyle = {
+  backgroundColor: 'var(--bg-elevated)',
+  border: '1px solid var(--border-default)',
+  color: 'var(--text-primary)',
+  borderRadius: '6px',
+  padding: '6px 12px',
+  fontSize: '13px',
+  outline: 'none',
+  width: '100%',
 }
 
 export default function TransactionsPage() {
@@ -60,7 +71,6 @@ export default function TransactionsPage() {
   const [employees, setEmployees] = useState<string[]>([])
   const [categories, setCategories] = useState<string[]>([])
 
-  // Filters
   const [search, setSearch] = useState('')
   const [employee, setEmployee] = useState('')
   const [category, setCategory] = useState('')
@@ -68,7 +78,6 @@ export default function TransactionsPage() {
   const [debitOnly, setDebitOnly] = useState(false)
   const [violationsOnly, setViolationsOnly] = useState(false)
 
-  // Sort + page
   const [sortBy, setSortBy] = useState<SortCol>('posting_date')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [page, setPage] = useState(1)
@@ -79,20 +88,13 @@ export default function TransactionsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('')
 
   useEffect(() => {
-    fetch('/api/employees')
-      .then(r => r.json())
-      .then((names: string[]) => setEmployees(names))
-      .catch(() => {})
+    fetch('/api/employees').then(r => r.json()).then((names: string[]) => setEmployees(names)).catch(() => {})
   }, [])
 
   useEffect(() => {
-    fetch('/api/transactions/categories')
-      .then(r => r.json())
-      .then((cats: string[]) => setCategories(cats))
-      .catch(() => {})
+    fetch('/api/transactions/categories').then(r => r.json()).then((cats: string[]) => setCategories(cats)).catch(() => {})
   }, [])
 
-  // Debounce search
   useEffect(() => {
     if (searchTimer.current) clearTimeout(searchTimer.current)
     searchTimer.current = setTimeout(() => setDebouncedSearch(search), 300)
@@ -122,7 +124,6 @@ export default function TransactionsPage() {
 
     return () => controller.abort()
   }, [page, pageSize, debouncedSearch, employee, category, preset, debitOnly, violationsOnly, sortBy, sortDir, scanVersion])
-
 
   async function runScan() {
     setScanLoading(true)
@@ -154,18 +155,31 @@ export default function TransactionsPage() {
 
   const txns = data?.transactions ?? []
 
+  const thStyle = {
+    color: 'var(--text-muted)',
+    fontWeight: '500' as const,
+    fontSize: '12px',
+    padding: '10px 14px',
+    textAlign: 'left' as const,
+    whiteSpace: 'nowrap' as const,
+    borderBottom: '1px solid var(--border-subtle)',
+    backgroundColor: 'var(--bg-elevated)',
+    cursor: 'pointer',
+  }
+
   return (
-    <div className="p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
+    <div className="p-4 lg:p-6">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Transactions</h1>
         <div className="flex items-center gap-3">
           {scanMsg && (
-            <span className="text-sm text-gray-600">{scanMsg}</span>
+            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{scanMsg}</span>
           )}
           <button
             onClick={runScan}
             disabled={scanLoading}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 transition-opacity hover:opacity-90"
+            style={{ backgroundColor: 'var(--accent)' }}
           >
             {scanLoading ? 'Scanning…' : 'Run Compliance Scan'}
           </button>
@@ -173,7 +187,10 @@ export default function TransactionsPage() {
       </div>
 
       {/* Filters */}
-      <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4">
+      <div
+        className="mb-4 rounded-lg p-4"
+        style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
+      >
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <div className="col-span-2 sm:col-span-1 lg:col-span-1">
             <input
@@ -181,13 +198,13 @@ export default function TransactionsPage() {
               placeholder="Search merchant, employee…"
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(1) }}
-              className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+              style={filterInputStyle}
             />
           </div>
           <select
             value={employee}
             onChange={e => { setEmployee(e.target.value); setPage(1) }}
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+            style={filterInputStyle}
           >
             <option value="">All employees</option>
             {employees.map(e => <option key={e} value={e}>{e}</option>)}
@@ -195,7 +212,7 @@ export default function TransactionsPage() {
           <select
             value={category}
             onChange={e => { setCategory(e.target.value); setPage(1) }}
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+            style={filterInputStyle}
           >
             <option value="">All categories</option>
             {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -203,7 +220,7 @@ export default function TransactionsPage() {
           <select
             value={preset}
             onChange={e => { setPreset(e.target.value); setPage(1) }}
-            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+            style={filterInputStyle}
           >
             <option value="last_day">Last day</option>
             <option value="last_month">Last month</option>
@@ -214,7 +231,7 @@ export default function TransactionsPage() {
           </select>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-4">
-          <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
             <input
               type="checkbox"
               checked={debitOnly}
@@ -223,7 +240,7 @@ export default function TransactionsPage() {
             />
             Debits only
           </label>
-          <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+          <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: 'var(--text-secondary)' }}>
             <input
               type="checkbox"
               checked={violationsOnly}
@@ -232,12 +249,12 @@ export default function TransactionsPage() {
             />
             Violations only
           </label>
-          <div className="ml-auto flex items-center gap-2 text-sm text-gray-700">
-            <span>Rows per page:</span>
+          <div className="ml-auto flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <span>Rows:</span>
             <select
               value={pageSize}
               onChange={e => { setPageSize(Number(e.target.value)); setPage(1) }}
-              className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
+              style={{ ...filterInputStyle, width: 'auto', padding: '4px 8px' }}
             >
               {[10, 25, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
             </select>
@@ -246,90 +263,114 @@ export default function TransactionsPage() {
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+      <div
+        className="rounded-lg overflow-hidden"
+        style={{ border: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-surface)' }}
+      >
         {loading && (
-          <div className="px-4 py-2 text-xs text-gray-400 border-b border-gray-100">Loading…</div>
+          <div
+            className="px-4 py-2 text-xs"
+            style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-subtle)' }}
+          >
+            Loading…
+          </div>
         )}
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead>
               <tr>
-                <th
-                  onClick={() => toggleSort('posting_date')}
-                  className="px-4 py-3 text-left font-medium text-gray-600 cursor-pointer hover:text-gray-900 whitespace-nowrap"
-                >
+                <th style={thStyle} onClick={() => toggleSort('posting_date')}>
                   Date <SortIcon col="posting_date" sortBy={sortBy} sortDir={sortDir} />
                 </th>
-                <th
-                  onClick={() => toggleSort('employee_name')}
-                  className="px-4 py-3 text-left font-medium text-gray-600 cursor-pointer hover:text-gray-900 whitespace-nowrap"
-                >
+                <th style={thStyle} onClick={() => toggleSort('employee_name')}>
                   Employee <SortIcon col="employee_name" sortBy={sortBy} sortDir={sortDir} />
                 </th>
-                <th
-                  onClick={() => toggleSort('merchant_name')}
-                  className="px-4 py-3 text-left font-medium text-gray-600 cursor-pointer hover:text-gray-900 whitespace-nowrap"
-                >
+                <th style={thStyle} onClick={() => toggleSort('merchant_name')}>
                   Merchant <SortIcon col="merchant_name" sortBy={sortBy} sortDir={sortDir} />
                 </th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600 whitespace-nowrap">Category</th>
-                <th
-                  onClick={() => toggleSort('amount')}
-                  className="px-4 py-3 text-right font-medium text-gray-600 cursor-pointer hover:text-gray-900 whitespace-nowrap"
-                >
+                <th style={{ ...thStyle, cursor: 'default' }}>Category</th>
+                <th style={{ ...thStyle, textAlign: 'right', cursor: 'pointer' }} onClick={() => toggleSort('amount')}>
                   Amount <SortIcon col="amount" sortBy={sortBy} sortDir={sortDir} />
                 </th>
-                <th className="px-4 py-3 text-left font-medium text-gray-600 whitespace-nowrap">Type</th>
-                <th
-                  onClick={() => toggleSort('severity')}
-                  className="px-4 py-3 text-left font-medium text-gray-600 cursor-pointer hover:text-gray-900 whitespace-nowrap"
-                >
+                <th style={{ ...thStyle, cursor: 'default' }}>Type</th>
+                <th style={thStyle} onClick={() => toggleSort('severity')}>
                   Violation <SortIcon col="severity" sortBy={sortBy} sortDir={sortDir} />
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody>
               {txns.length === 0 && !loading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-400 text-sm">
+                  <td
+                    colSpan={7}
+                    className="px-4 py-8 text-center text-sm"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
                     {violationsOnly ? 'No violations found. Run a compliance scan first.' : 'No transactions match your filters.'}
                   </td>
                 </tr>
               ) : (
                 txns.map((t, i) => {
-                  const borderClass = t.violation ? (SEVERITY_BORDER[t.violation.severity] ?? '') : ''
+                  const borderLeft = t.violation ? (SEVERITY_BORDER[t.violation.severity] ?? '') : ''
                   return (
-                    <tr key={t.transaction_code ?? i} className={`hover:bg-gray-50 ${borderClass}`}>
-                      <td className="px-4 py-2.5 text-gray-700 whitespace-nowrap">{t.posting_date ?? '—'}</td>
-                      <td className="px-4 py-2.5 text-gray-900 font-medium whitespace-nowrap">{t.employee_name ?? '—'}</td>
-                      <td className="px-4 py-2.5 text-gray-700 max-w-[180px] truncate" title={t.merchant_name ?? ''}>{t.merchant_name ?? '—'}</td>
-                      <td className="px-4 py-2.5 text-gray-500 whitespace-nowrap">{t.category_label ?? '—'}</td>
-                      <td className="px-4 py-2.5 text-right font-mono text-gray-900 whitespace-nowrap">
+                    <tr
+                      key={t.transaction_code ?? i}
+                      className="transition-colors"
+                      style={{
+                        borderLeft: borderLeft || undefined,
+                      }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--bg-elevated)' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = '' }}
+                    >
+                      <td className="px-4 py-2.5 whitespace-nowrap" style={{ color: 'var(--text-secondary)' }}>{t.posting_date ?? '—'}</td>
+                      <td className="px-4 py-2.5 font-medium whitespace-nowrap" style={{ color: 'var(--text-primary)' }}>{t.employee_name ?? '—'}</td>
+                      <td className="px-4 py-2.5 max-w-[180px] truncate" style={{ color: 'var(--text-secondary)' }} title={t.merchant_name ?? ''}>{t.merchant_name ?? '—'}</td>
+                      <td className="px-4 py-2.5 whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>{t.category_label ?? '—'}</td>
+                      <td className="px-4 py-2.5 text-right font-mono whitespace-nowrap" style={{ color: 'var(--text-primary)' }}>
                         {t.amount !== null ? fmtCurrency(t.amount) : '—'}
                       </td>
                       <td className="px-4 py-2.5 whitespace-nowrap">
-                        <span className={`text-xs px-1.5 py-0.5 rounded ${
-                          t.debit_or_credit === 'debit'
-                            ? 'bg-red-50 text-red-600'
-                            : 'bg-emerald-50 text-emerald-600'
-                        }`}>
+                        <span
+                          className="text-xs px-1.5 py-0.5 rounded"
+                          style={
+                            t.debit_or_credit === 'debit'
+                              ? { backgroundColor: 'rgba(245,88,88,0.10)', color: '#F55858' }
+                              : { backgroundColor: 'rgba(52,217,135,0.10)', color: '#34D987' }
+                          }
+                        >
                           {t.debit_or_credit ?? '—'}
                         </span>
                       </td>
                       <td className="px-4 py-2.5 whitespace-nowrap">
                         {t.violation ? (
                           <div className="relative inline-block group">
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full cursor-default ${SEVERITY_COLORS[t.violation.severity] ?? ''}`}>
+                            <span
+                              className="text-xs font-medium px-2 py-0.5 rounded-full cursor-default"
+                              style={{
+                                backgroundColor: SEVERITY_COLORS[t.violation.severity]?.bg ?? 'transparent',
+                                color: SEVERITY_COLORS[t.violation.severity]?.text ?? 'inherit',
+                              }}
+                            >
                               {t.violation.severity}
                             </span>
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 rounded-md bg-gray-900 px-3 py-2 text-xs text-white shadow-lg hidden group-hover:block z-50 whitespace-normal pointer-events-none">
+                            <div
+                              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 rounded-lg px-3 py-2 text-xs shadow-xl hidden group-hover:block z-50 whitespace-normal pointer-events-none"
+                              style={{
+                                backgroundColor: 'var(--bg-elevated)',
+                                border: '1px solid var(--border-default)',
+                                color: 'var(--text-primary)',
+                              }}
+                            >
                               <p className="font-semibold mb-1">{t.violation.violation_type.replace(/_/g, ' ')}</p>
-                              <p className="text-gray-300">{t.violation.reasoning}</p>
-                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+                              <p style={{ color: 'var(--text-secondary)' }}>{t.violation.reasoning}</p>
+                              <div
+                                className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent"
+                                style={{ borderTopColor: 'var(--bg-elevated)' }}
+                              />
                             </div>
                           </div>
                         ) : (
-                          <span className="text-gray-300">—</span>
+                          <span style={{ color: 'var(--text-muted)' }}>—</span>
                         )}
                       </td>
                     </tr>
@@ -340,27 +381,34 @@ export default function TransactionsPage() {
           </table>
         </div>
 
-        {/* Pagination */}
         {data && data.pageCount > 1 && (
-          <div className="border-t border-gray-100 px-4 py-3 flex items-center justify-between text-sm text-gray-600">
+          <div
+            className="px-4 py-3 flex items-center justify-between text-sm"
+            style={{
+              borderTop: '1px solid var(--border-subtle)',
+              color: 'var(--text-secondary)',
+            }}
+          >
             <span>
               {data.total.toLocaleString()} total · page {data.page} of {data.pageCount}
             </span>
             <div className="flex items-center gap-1">
-              <button
-                onClick={() => setPage(1)}
-                disabled={page === 1}
-                className="px-2 py-1 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                «
-              </button>
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="px-2 py-1 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                ‹
-              </button>
+              {[
+                { label: '«', action: () => setPage(1), disabled: page === 1 },
+                { label: '‹', action: () => setPage(p => Math.max(1, p - 1)), disabled: page === 1 },
+              ].map(btn => (
+                <button
+                  key={btn.label}
+                  onClick={btn.action}
+                  disabled={btn.disabled}
+                  className="px-2 py-1 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ color: 'var(--text-secondary)' }}
+                  onMouseEnter={e => { if (!btn.disabled) (e.target as HTMLElement).style.backgroundColor = 'var(--bg-elevated)' }}
+                  onMouseLeave={e => { (e.target as HTMLElement).style.backgroundColor = '' }}
+                >
+                  {btn.label}
+                </button>
+              ))}
               {Array.from({ length: Math.min(5, data.pageCount) }, (_, i) => {
                 const half = 2
                 let start = Math.max(1, page - half)
@@ -371,25 +419,34 @@ export default function TransactionsPage() {
                 <button
                   key={p}
                   onClick={() => setPage(p)}
-                  className={`px-2.5 py-1 rounded text-sm ${p === page ? 'bg-blue-600 text-white' : 'hover:bg-gray-100'}`}
+                  className="px-2.5 py-1 rounded text-sm transition-colors"
+                  style={
+                    p === page
+                      ? { backgroundColor: 'var(--accent)', color: '#fff' }
+                      : { color: 'var(--text-secondary)' }
+                  }
+                  onMouseEnter={e => { if (p !== page) (e.target as HTMLElement).style.backgroundColor = 'var(--bg-elevated)' }}
+                  onMouseLeave={e => { if (p !== page) (e.target as HTMLElement).style.backgroundColor = '' }}
                 >
                   {p}
                 </button>
               ))}
-              <button
-                onClick={() => setPage(p => Math.min(data.pageCount, p + 1))}
-                disabled={page === data.pageCount}
-                className="px-2 py-1 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                ›
-              </button>
-              <button
-                onClick={() => setPage(data.pageCount)}
-                disabled={page === data.pageCount}
-                className="px-2 py-1 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                »
-              </button>
+              {[
+                { label: '›', action: () => setPage(p => Math.min(data.pageCount, p + 1)), disabled: page === data.pageCount },
+                { label: '»', action: () => setPage(data.pageCount), disabled: page === data.pageCount },
+              ].map(btn => (
+                <button
+                  key={btn.label}
+                  onClick={btn.action}
+                  disabled={btn.disabled}
+                  className="px-2 py-1 rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ color: 'var(--text-secondary)' }}
+                  onMouseEnter={e => { if (!btn.disabled) (e.target as HTMLElement).style.backgroundColor = 'var(--bg-elevated)' }}
+                  onMouseLeave={e => { (e.target as HTMLElement).style.backgroundColor = '' }}
+                >
+                  {btn.label}
+                </button>
+              ))}
             </div>
           </div>
         )}

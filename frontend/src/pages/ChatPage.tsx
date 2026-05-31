@@ -6,8 +6,6 @@ import {
 import { fmt } from '../lib/format'
 import { CHART_COLORS } from '../lib/chartColors'
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
 type VisualizationType = 'bar' | 'pie' | 'line' | 'table' | 'number'
 
 interface Visualization {
@@ -28,14 +26,18 @@ type UserMessage = { role: 'user'; content: string }
 type AssistantMessage = { role: 'assistant'; content: string; response: ChatResponse }
 type ChatMessage = UserMessage | AssistantMessage
 
-// ── Constants + helpers ────────────────────────────────────────────────────────
-
+const TOOLTIP_STYLE = {
+  background: '#1D1D2E',
+  border: '1px solid rgba(255,255,255,0.10)',
+  borderRadius: '8px',
+  color: '#EEEEF5',
+  fontSize: '12px',
+}
 
 function normalizeChartData(raw: Record<string, unknown>[]): { label: string; value: number }[] {
   if (!raw.length) return []
   const first = raw[0]
   if ('label' in first && 'value' in first) return raw as { label: string; value: number }[]
-  // Defensive fallback: infer label (first string key) and value (first numeric key)
   const labelKey = Object.keys(first).find(k => typeof first[k] === 'string') ?? ''
   const valueKey = Object.keys(first).find(k => typeof first[k] === 'number') ?? ''
   if (!labelKey || !valueKey) return []
@@ -43,22 +45,20 @@ function normalizeChartData(raw: Record<string, unknown>[]): { label: string; va
 }
 
 function confidenceColor(c: 'high' | 'medium' | 'low'): string {
-  if (c === 'high') return 'text-emerald-600'
-  if (c === 'medium') return 'text-amber-600'
-  return 'text-red-600'
+  if (c === 'high') return 'text-[#34D987]'
+  if (c === 'medium') return 'text-[#F5A623]'
+  return 'text-[#F55858]'
 }
-
-// ── Visualization sub-components ───────────────────────────────────────────────
 
 function BarViz({ data }: { data: Record<string, unknown>[] }) {
   const chartData = normalizeChartData(data)
   return (
     <ResponsiveContainer width="100%" height={240}>
       <BarChart data={chartData} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-        <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-        <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `$${fmt(v)}`} />
-        <Tooltip formatter={(v: number) => [`$${fmt(v)}`, 'Amount']} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+        <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#8888AA' }} />
+        <YAxis tick={{ fontSize: 11, fill: '#8888AA' }} tickFormatter={(v: number) => `$${fmt(v)}`} />
+        <Tooltip formatter={(v: number) => [`$${fmt(v)}`, 'Amount']} contentStyle={TOOLTIP_STYLE} />
         <Bar dataKey="value" fill={CHART_COLORS[0]} radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
@@ -84,8 +84,8 @@ function PieViz({ data }: { data: Record<string, unknown>[] }) {
             <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
           ))}
         </Pie>
-        <Tooltip formatter={(v: number) => [`$${fmt(v)}`, '']} />
-        <Legend iconType="circle" iconSize={8} />
+        <Tooltip formatter={(v: number) => [`$${fmt(v)}`, '']} contentStyle={TOOLTIP_STYLE} />
+        <Legend iconType="circle" iconSize={8} wrapperStyle={{ color: '#8888AA', fontSize: 11 }} />
       </PieChart>
     </ResponsiveContainer>
   )
@@ -96,26 +96,30 @@ function LineViz({ data }: { data: Record<string, unknown>[] }) {
   return (
     <ResponsiveContainer width="100%" height={240}>
       <LineChart data={chartData} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-        <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-        <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `$${fmt(v)}`} />
-        <Tooltip formatter={(v: number) => [`$${fmt(v)}`, 'Amount']} />
-        <Line type="monotone" dataKey="value" stroke={CHART_COLORS[0]} strokeWidth={2} dot={{ r: 3 }} />
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+        <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#8888AA' }} />
+        <YAxis tick={{ fontSize: 11, fill: '#8888AA' }} tickFormatter={(v: number) => `$${fmt(v)}`} />
+        <Tooltip formatter={(v: number) => [`$${fmt(v)}`, 'Amount']} contentStyle={TOOLTIP_STYLE} />
+        <Line type="monotone" dataKey="value" stroke={CHART_COLORS[0]} strokeWidth={2} dot={{ r: 3, fill: CHART_COLORS[0] }} />
       </LineChart>
     </ResponsiveContainer>
   )
 }
 
 function TableViz({ data }: { data: Record<string, unknown>[] }) {
-  if (!data.length) return <p className="text-sm text-gray-400 text-center py-4">No data</p>
+  if (!data.length) return <p className="text-sm text-center py-4" style={{ color: 'var(--text-muted)' }}>No data</p>
   const columns = Object.keys(data[0])
   return (
     <div className="overflow-auto max-h-60">
       <table className="w-full text-xs border-collapse">
         <thead>
-          <tr className="bg-gray-50">
+          <tr style={{ backgroundColor: 'var(--bg-base)' }}>
             {columns.map(col => (
-              <th key={col} className="text-left px-3 py-2 font-medium text-gray-500 border-b border-gray-200 whitespace-nowrap">
+              <th
+                key={col}
+                className="text-left px-3 py-2 font-medium whitespace-nowrap"
+                style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border-subtle)' }}
+              >
                 {col.replace(/_/g, ' ')}
               </th>
             ))}
@@ -123,13 +127,17 @@ function TableViz({ data }: { data: Record<string, unknown>[] }) {
         </thead>
         <tbody>
           {data.map((row, i) => (
-            <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+            <tr key={i} style={{ backgroundColor: i % 2 === 0 ? 'var(--bg-surface)' : 'var(--bg-elevated)' }}>
               {columns.map(col => {
                 const v = row[col]
                 const isAmt = typeof v === 'number' &&
                   (col.includes('amount') || col.includes('spend') || col.includes('total'))
                 return (
-                  <td key={col} className="px-3 py-2 text-gray-700 border-b border-gray-100 whitespace-nowrap">
+                  <td
+                    key={col}
+                    className="px-3 py-2 whitespace-nowrap"
+                    style={{ color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-subtle)' }}
+                  >
                     {isAmt ? `$${fmt(v as number)}` : String(v ?? '')}
                   </td>
                 )
@@ -150,7 +158,7 @@ function NumberViz({ data, title }: { data: Record<string, unknown>[]; title: st
   const isCurrency = /spend|amount|total|revenue|budget|cost/i.test(title)
   return (
     <div className="flex flex-col items-center justify-center py-6">
-      <p className="text-4xl font-bold text-gray-900 tabular-nums">
+      <p className="text-4xl font-bold tabular-nums" style={{ color: 'var(--text-primary)' }}>
         {isCurrency ? `$${fmt(val)}` : fmt(val)}
       </p>
     </div>
@@ -160,8 +168,13 @@ function NumberViz({ data, title }: { data: Record<string, unknown>[]; title: st
 function VizCard({ viz }: { viz: Visualization }) {
   if (!viz.data.length) return null
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-4 mt-2">
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">{viz.title}</p>
+    <div
+      className="rounded-xl p-4 mt-2"
+      style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}
+    >
+      <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>
+        {viz.title}
+      </p>
       {viz.type === 'bar' && <BarViz data={viz.data} />}
       {viz.type === 'pie' && <PieViz data={viz.data} />}
       {viz.type === 'line' && <LineViz data={viz.data} />}
@@ -171,20 +184,24 @@ function VizCard({ viz }: { viz: Visualization }) {
   )
 }
 
-// ── Chat UI sub-components ─────────────────────────────────────────────────────
-
 function TypingIndicator() {
   return (
     <div className="flex items-start gap-3">
-      <div className="flex-shrink-0 w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center">
-        <span className="text-blue-600 text-xs font-bold">B</span>
+      <div
+        className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center"
+        style={{ backgroundColor: 'rgba(79,130,247,0.15)' }}
+      >
+        <span className="text-xs font-bold" style={{ color: 'var(--accent)' }}>B</span>
       </div>
-      <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1 items-center">
+      <div
+        className="rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1 items-center"
+        style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}
+      >
         {[0, 150, 300].map(delay => (
           <span
             key={delay}
-            className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-            style={{ animationDelay: `${delay}ms` }}
+            className="w-2 h-2 rounded-full animate-bounce"
+            style={{ backgroundColor: 'var(--text-muted)', animationDelay: `${delay}ms` }}
           />
         ))}
       </div>
@@ -200,7 +217,12 @@ function FollowUpChips({ suggestions, onSelect, disabled }: { suggestions: strin
           key={i}
           onClick={() => onSelect(s)}
           disabled={disabled}
-          className="rounded-full border border-blue-200 bg-blue-50 text-blue-700 text-xs px-3 py-1 hover:bg-blue-100 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-full text-xs px-3 py-1 transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            border: '1px solid var(--border-default)',
+            backgroundColor: 'var(--bg-elevated)',
+            color: 'var(--accent)',
+          }}
         >
           {s}
         </button>
@@ -212,7 +234,10 @@ function FollowUpChips({ suggestions, onSelect, disabled }: { suggestions: strin
 function UserBubble({ content }: { content: string }) {
   return (
     <div className="flex justify-end">
-      <div className="max-w-[75%] rounded-2xl rounded-tr-sm bg-blue-600 text-white px-4 py-2.5 text-sm whitespace-pre-wrap">
+      <div
+        className="max-w-[75%] rounded-2xl rounded-tr-sm px-4 py-2.5 text-sm whitespace-pre-wrap text-white"
+        style={{ backgroundColor: 'var(--accent)' }}
+      >
         {content}
       </div>
     </div>
@@ -223,15 +248,21 @@ function AssistantBubble({ msg, onFollowUp, disabled }: { msg: AssistantMessage;
   const { response } = msg
   return (
     <div className="flex items-start gap-3">
-      <div className="flex-shrink-0 w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center">
-        <span className="text-blue-600 text-xs font-bold">B</span>
+      <div
+        className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center"
+        style={{ backgroundColor: 'rgba(79,130,247,0.15)' }}
+      >
+        <span className="text-xs font-bold" style={{ color: 'var(--accent)' }}>B</span>
       </div>
       <div className="flex-1 min-w-0">
-        <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3">
-          <p className="text-sm text-gray-700 whitespace-pre-wrap">{msg.content}</p>
+        <div
+          className="rounded-2xl rounded-tl-sm px-4 py-3"
+          style={{ backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}
+        >
+          <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--text-primary)' }}>{msg.content}</p>
         </div>
         <VizCard viz={response.visualization} />
-        <div className="flex items-center gap-2 mt-1.5 text-xs text-gray-400 flex-wrap">
+        <div className="flex items-center gap-2 mt-1.5 text-xs flex-wrap" style={{ color: 'var(--text-muted)' }}>
           <span>{response.metadata.dateRange}</span>
           <span>·</span>
           <span>{response.metadata.rowsAnalyzed} rows</span>
@@ -255,11 +286,14 @@ const STARTER_PROMPTS = [
 function EmptyState({ onSelect }: { onSelect: (s: string) => void }) {
   return (
     <div className="flex flex-col items-center justify-center h-full py-16 text-center">
-      <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-4">
-        <span className="text-blue-600 text-2xl font-bold">B</span>
+      <div
+        className="w-12 h-12 rounded-full flex items-center justify-center mb-4"
+        style={{ backgroundColor: 'rgba(79,130,247,0.15)' }}
+      >
+        <span className="text-2xl font-bold" style={{ color: 'var(--accent)' }}>B</span>
       </div>
-      <h3 className="text-lg font-semibold text-gray-800 mb-1">Ask Brianna</h3>
-      <p className="text-sm text-gray-400 mb-6 max-w-xs">
+      <h3 className="text-lg font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Ask Brianna</h3>
+      <p className="text-sm mb-6 max-w-xs" style={{ color: 'var(--text-secondary)' }}>
         Ask me about team spending, compliance, or individual employees.
       </p>
       <div className="flex flex-wrap gap-2 justify-center">
@@ -267,7 +301,12 @@ function EmptyState({ onSelect }: { onSelect: (s: string) => void }) {
           <button
             key={i}
             onClick={() => onSelect(p)}
-            className="rounded-full border border-blue-200 bg-blue-50 text-blue-700 text-sm px-4 py-2 hover:bg-blue-100 transition-colors"
+            className="rounded-full text-sm px-4 py-2 transition-colors"
+            style={{
+              border: '1px solid var(--border-default)',
+              backgroundColor: 'var(--bg-elevated)',
+              color: 'var(--accent)',
+            }}
           >
             {p}
           </button>
@@ -279,14 +318,19 @@ function EmptyState({ onSelect }: { onSelect: (s: string) => void }) {
 
 function ErrorBanner({ message, onDismiss }: { message: string; onDismiss: () => void }) {
   return (
-    <div className="flex items-center gap-3 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+    <div
+      className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm"
+      style={{
+        backgroundColor: 'rgba(245,88,88,0.10)',
+        border: '1px solid rgba(245,88,88,0.30)',
+        color: 'var(--accent-red)',
+      }}
+    >
       <span className="flex-1">{message}</span>
-      <button onClick={onDismiss} className="text-red-400 hover:text-red-600 font-medium leading-none">×</button>
+      <button onClick={onDismiss} className="font-medium leading-none opacity-70 hover:opacity-100">×</button>
     </div>
   )
 }
-
-// ── ChatPage ───────────────────────────────────────────────────────────────────
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -332,7 +376,10 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6.25rem)]">
+    <div
+      className="flex flex-col"
+      style={{ height: 'calc(100vh - 3.5rem)' }}
+    >
       {/* Scrollable message thread */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages.length === 0 && <EmptyState onSelect={text => void sendMessage(text)} />}
@@ -347,21 +394,31 @@ export default function ChatPage() {
       </div>
 
       {/* Input bar */}
-      <div className="border-t border-gray-200 bg-white px-4 py-3">
+      <div
+        className="px-4 py-3 flex-shrink-0"
+        style={{ borderTop: '1px solid var(--border-subtle)', backgroundColor: 'var(--bg-surface)' }}
+      >
         <div className="flex gap-2 items-end">
           <textarea
             rows={1}
-            placeholder="Ask about team spending... (Shift+Enter for newline)"
+            placeholder="Ask about team spending… (Shift+Enter for newline)"
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={loading}
-            className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+            className="flex-1 rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 disabled:opacity-50"
+            style={{
+              backgroundColor: 'var(--bg-elevated)',
+              border: '1px solid var(--border-default)',
+              color: 'var(--text-primary)',
+              caretColor: 'var(--accent)',
+            }}
           />
           <button
             onClick={() => void sendMessage(input)}
             disabled={loading || !input.trim()}
-            className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="rounded-xl px-4 py-2.5 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+            style={{ backgroundColor: 'var(--accent)' }}
           >
             Send
           </button>

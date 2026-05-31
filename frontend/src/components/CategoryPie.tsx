@@ -3,10 +3,18 @@ import { useBudget } from '../context/BudgetContext'
 import { fmt, pctOf } from '../lib/format'
 import { CHART_COLORS } from '../lib/chartColors'
 
-const OTHER_COLOR = '#9ca3af'
+const OTHER_COLOR = '#4A4A6A'
 
 function colorFor(label: string, index: number) {
   return label === 'Other' ? OTHER_COLOR : CHART_COLORS[index % CHART_COLORS.length]
+}
+
+const TOOLTIP_STYLE = {
+  background: '#1D1D2E',
+  border: '1px solid rgba(255,255,255,0.10)',
+  borderRadius: '8px',
+  color: '#EEEEF5',
+  fontSize: '12px',
 }
 
 export default function CategoryPie() {
@@ -16,9 +24,12 @@ export default function CategoryPie() {
 
   if (data == null) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 flex-1 animate-pulse">
-        <div className="h-4 bg-gray-100 rounded w-32 mb-6" />
-        <div className="h-72 bg-gray-100 rounded-xl" />
+      <div
+        className="rounded-2xl p-8 flex-1 animate-pulse"
+        style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
+      >
+        <div className="h-4 rounded w-32 mb-6" style={{ backgroundColor: 'var(--bg-elevated)' }} />
+        <div className="h-72 rounded-xl" style={{ backgroundColor: 'var(--bg-elevated)' }} />
       </div>
     )
   }
@@ -31,13 +42,16 @@ export default function CategoryPie() {
   const categoryTotal = pieData.reduce((s, c) => s + c.amount, 0)
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 flex-1">
-      <p className="text-xs font-semibold tracking-widest text-gray-400 uppercase mb-4">
+    <div
+      className="rounded-2xl p-8 flex-1"
+      style={{ backgroundColor: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
+    >
+      <p className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: 'var(--text-muted)' }}>
         Spend by Category
       </p>
 
       {pieData.length === 0 ? (
-        <p className="text-sm text-gray-400 text-center py-12">No transactions yet</p>
+        <p className="text-sm text-center py-12" style={{ color: 'var(--text-muted)' }}>No transactions yet</p>
       ) : (
         <>
           <ResponsiveContainer width="100%" height={260}>
@@ -58,7 +72,7 @@ export default function CategoryPie() {
               </Pie>
               <Tooltip
                 formatter={(v: number) => [`$${fmt(v)} (${pctOf(v, categoryTotal)}%)`, '']}
-                contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '12px' }}
+                contentStyle={TOOLTIP_STYLE}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -71,13 +85,13 @@ export default function CategoryPie() {
                     className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
                     style={{ backgroundColor: colorFor(cat.label, i) }}
                   />
-                  <span className="text-gray-700">{cat.label}</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>{cat.label}</span>
                 </div>
                 <div className="flex items-center gap-3 text-right">
-                  <span className="text-gray-400 text-xs">
+                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                     {pctOf(cat.amount, categoryTotal)}%
                   </span>
-                  <span className="font-semibold text-gray-900 tabular-nums w-20">
+                  <span className="font-semibold tabular-nums w-20" style={{ color: 'var(--text-primary)' }}>
                     ${fmt(cat.amount)}
                   </span>
                 </div>
