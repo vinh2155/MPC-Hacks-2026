@@ -135,7 +135,7 @@ frontend/src/
   pages/
     BudgetPage.tsx          — renders BudgetGauge
     ChatPage.tsx            — AI chat interface: message thread, 5 viz types (bar/pie/line/table/number), follow-up chips, typing indicator, empty state; sends to /api/chat, history capped at 10
-    CompliancePage.tsx      — Run Scan button, violations list (severity badges, repeat offender badge, expandable reasoning), client-side filters (severity + employee), 20-per-page pagination
+    CompliancePage.tsx      — Run Scan button, violations list (severity badges, repeat offender badge, expandable reasoning, split-charge amber badge + grouped related-transactions block), client-side filters (severity + employee), 20-per-page pagination
     ApprovalsPage.tsx       — pending requests with auto-fetched AI recommendation chips (approve/deny/escalate), budget impact per card, Approve/Deny buttons; resolved section below
     ReportsPage.tsx         — segmented control (Period/Employee); period: weekly/monthly selector → POST /api/reports/period; employee: dropdown from GET /api/employees → POST /api/reports/employee; stats strip + narrative; Download JSON
     EmployeeRequestPage.tsx — request form (employee name + item + amount + category + reason); pending/approved/denied status screen with 5s polling (implemented)

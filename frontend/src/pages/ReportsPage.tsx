@@ -277,7 +277,7 @@ export default function ReportsPage() {
             <button
               onClick={() => downloadJson(
                 periodReport,
-                `report-${periodReport.period}-${periodReport.generatedAt.split('T')[0]}.json`,
+                `brianna-report-${periodReport.period}-${periodReport.generatedAt.split('T')[0]}.json`,
               )}
               className="flex-shrink-0 rounded-md border border-gray-200 px-4 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
             >
@@ -310,7 +310,7 @@ export default function ReportsPage() {
             <button
               onClick={() => downloadJson(
                 employeeReport,
-                `report-${employeeReport.employeeName.toLowerCase()}-${employeeReport.generatedAt.split('T')[0]}.json`,
+                `brianna-report-${employeeReport.employeeName.toLowerCase()}-${employeeReport.generatedAt.split('T')[0]}.json`,
               )}
               className="flex-shrink-0 rounded-md border border-gray-200 px-4 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
             >
