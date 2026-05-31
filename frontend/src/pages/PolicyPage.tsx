@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useBudget } from '../context/BudgetContext'
 
 interface PolicyRule {
@@ -254,6 +254,17 @@ function LimitRow({
   step: number
   onChange: (v: string) => void
 }) {
+  const [raw, setRaw] = useState(String(value))
+
+  // Sync if parent resets the value (e.g. Reset button)
+  useEffect(() => { setRaw(String(value)) }, [value])
+
+  const commit = useCallback(() => {
+    const n = parseFloat(raw)
+    if (!isNaN(n)) onChange(raw)
+    else setRaw(String(value))
+  }, [raw, value, onChange])
+
   return (
     <div className="flex items-center justify-between px-4 py-3 gap-4">
       <div className="min-w-0">
@@ -264,10 +275,11 @@ function LimitRow({
         {prefix && <span className="text-sm text-gray-500">{prefix}</span>}
         <input
           type="number"
-          value={value}
+          value={raw}
           step={step}
           min={0}
-          onChange={e => onChange(e.target.value)}
+          onChange={e => setRaw(e.target.value)}
+          onBlur={commit}
           className="w-24 rounded-md border border-gray-300 px-2 py-1 text-sm text-right focus:border-blue-500 focus:outline-none"
         />
         {suffix && <span className="text-sm text-gray-500">{suffix}</span>}
