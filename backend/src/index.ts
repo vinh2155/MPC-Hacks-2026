@@ -31,6 +31,15 @@ app.get('/api/debug/transactions', (req, res) => {
   res.json(rows);
 });
 
+app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (err && typeof err === 'object' && 'error' in err && 'raw' in err) {
+    res.status(502).json({ error: (err as { error: string }).error });
+    return;
+  }
+  const message = err instanceof Error ? err.message : 'Internal server error';
+  res.status(500).json({ error: message });
+});
+
 // Node 22 + keep-alive can send both Content-Length and Transfer-Encoding on
 // long-running responses, which violates HTTP/1.1 and breaks Vite's proxy.
 // Disabling keep-alive prevents chunked encoding from being applied.

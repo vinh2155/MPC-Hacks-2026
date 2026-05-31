@@ -123,7 +123,7 @@ frontend/src/
   context/RoleContext.tsx — useRole() hook, RoleProvider; default role = 'manager'
   context/BudgetContext.tsx — polls /api/budget/summary every 5s; exposes data/error/refetch
   context/ComplianceContext.tsx — fetches /api/compliance/score on mount; exposes scoreData/refetchScore; used by header chip + CompliancePage
-  lib/format.ts         — fmt(n) currency formatter; pctOf(amount, total) percentage helper
+  lib/format.ts         — fmt(n) whole-dollar formatter (drops cents); fmtCurrency(n) cent-accurate formatter (2dp); pctOf(amount, total) percentage helper
   pages/
     BudgetPage.tsx          — renders BudgetGauge
     ChatPage.tsx            — [stub] Issue #9/#10
@@ -151,7 +151,7 @@ Rows marked ✓ are implemented; the rest are planned (no route file yet).
 | ✓ | GET | `/api/requests` | All requests, newest first |
 | ✓ | GET | `/api/requests/:id` | Single request |
 | ✓ | PATCH | `/api/requests/:id` | Update status to approved/denied |
-| | POST | `/api/requests/:id/recommendation` | Claude approve/deny/escalate with reasoning |
+| ✓ | POST | `/api/requests/:id/recommendation` | Claude approve/deny/escalate with reasoning; includes employee 30-day spend + budget context |
 | | POST | `/api/reports/period` | `{ period: "weekly"\|"monthly" }` → exec memo |
 | | POST | `/api/reports/employee` | `{ employeeName }` → spend profile |
 | | GET | `/api/employees` | List of 8 employee names |
