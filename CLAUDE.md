@@ -82,6 +82,7 @@ Reusable wrapper: `backend/src/lib/claude.ts` (implemented):
 - **Tailwind v4**: no `tailwind.config.js`. Plugin loaded via `@tailwindcss/vite` in `vite.config.ts`. Only entry needed in `src/index.css`: `@import "tailwindcss"`.
 - **ESLint**: type-aware (`tseslint.configs.recommendedTypeChecked`). `parserOptions.project: true` in `eslint.config.js` — running `npm run lint` requires a valid `tsconfig.app.json`.
 - **Vite proxy**: all `/api/*` requests forwarded to `http://localhost:3001` — no CORS headers needed on the backend in dev.
+- **Tab rendering**: `App.tsx` renders all manager pages simultaneously with `className={activeTab !== 'budget' ? 'hidden' : ''}` — every page is always mounted. Any `useEffect` or API call at the top level of a page component fires immediately on app load, not when the tab is clicked. Use lazy fetching (trigger on user action or check visibility) if a page should only load data when active.
 
 ### Security
 

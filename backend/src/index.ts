@@ -4,6 +4,7 @@ import cors from 'cors';
 import { db } from './db';
 import budgetRouter from './routes/budget';
 import chatRouter from './routes/chat';
+import complianceRouter from './routes/compliance';
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
@@ -13,6 +14,7 @@ app.use(express.json());
 
 app.use('/api/budget', budgetRouter);
 app.use('/api/chat', chatRouter);
+app.use('/api/compliance', complianceRouter);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
