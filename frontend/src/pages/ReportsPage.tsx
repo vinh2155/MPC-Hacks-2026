@@ -42,30 +42,74 @@ interface EmployeeReport {
 
 function printReportAsPdf(title: string, subtitle: string, stats: { label: string; value: string }[], narrative: string) {
   const statsHtml = stats.map(s => `
-    <div style="background:#f9fafb;border-radius:8px;padding:12px 16px;">
-      <div style="font-size:11px;color:#6b7280;margin-bottom:2px;">${s.label}</div>
-      <div style="font-size:18px;font-weight:700;color:#111827;">${s.value}</div>
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:8px;padding:16px 20px;">
+      <div style="font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9ca3af;margin-bottom:6px;">${s.label}</div>
+      <div style="font-size:22px;font-weight:700;color:#111827;font-variant-numeric:tabular-nums;">${s.value}</div>
     </div>`).join('')
 
   const narrativeHtml = narrative.split(/\n\n+/).map(p =>
-    `<p style="margin:0 0 14px;color:#374151;font-size:13px;line-height:1.7;">${p.trim()}</p>`
+    `<p style="margin:0 0 16px;color:#374151;font-size:13.5px;line-height:1.75;">${p.trim()}</p>`
   ).join('')
+
+  const generated = new Date().toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short' })
 
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
     <title>${title}</title>
     <style>
-      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 40px; color: #111827; }
-      @media print { body { padding: 24px; } }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: #fff; color: #111827; }
+      @media print {
+        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      }
     </style>
   </head><body>
-    <div style="border-bottom:2px solid #e5e7eb;padding-bottom:16px;margin-bottom:24px;">
-      <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;margin-bottom:6px;">Brianna · Spend Report</div>
-      <h1 style="margin:0 0 4px;font-size:22px;font-weight:700;">${title}</h1>
-      <div style="font-size:12px;color:#9ca3af;">${subtitle}</div>
+    <!-- Top accent bar -->
+    <div style="height:5px;background:linear-gradient(90deg,#2563eb 0%,#1d4ed8 100%);"></div>
+
+    <!-- Header -->
+    <div style="padding:36px 48px 28px;border-bottom:1px solid #f3f4f6;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px;">
+        <div>
+          <!-- Wordmark -->
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+            <div style="width:34px;height:34px;background:#2563eb;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <span style="color:#fff;font-size:17px;font-weight:800;letter-spacing:-1px;line-height:1;">B</span>
+            </div>
+            <div>
+              <div style="font-size:15px;font-weight:800;color:#111827;letter-spacing:-.3px;line-height:1.2;">Brianna</div>
+              <div style="font-size:9.5px;color:#9ca3af;letter-spacing:.05em;text-transform:uppercase;margin-top:1px;">Fleet Spend Management</div>
+            </div>
+          </div>
+          <h1 style="font-size:24px;font-weight:700;color:#111827;letter-spacing:-.4px;line-height:1.2;margin-bottom:5px;">${title}</h1>
+          <div style="font-size:12px;color:#6b7280;">${subtitle}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;padding-top:4px;">
+          <div style="display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;border-radius:20px;padding:4px 12px;margin-bottom:8px;">
+            <span style="font-size:10px;font-weight:600;color:#2563eb;letter-spacing:.04em;text-transform:uppercase;">Brim Financial</span>
+          </div>
+          <div style="font-size:11px;color:#9ca3af;">Generated ${generated}</div>
+        </div>
+      </div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;">${statsHtml}</div>
-    <hr style="border:none;border-top:1px solid #e5e7eb;margin:0 0 20px;">
-    <div>${narrativeHtml}</div>
+
+    <!-- Stats strip -->
+    <div style="padding:24px 48px;background:#f9fafb;border-bottom:1px solid #f3f4f6;">
+      <div style="display:grid;grid-template-columns:repeat(${stats.length},1fr);gap:12px;">
+        ${statsHtml}
+      </div>
+    </div>
+
+    <!-- Narrative -->
+    <div style="padding:32px 48px 40px;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #f3f4f6;">Executive Summary</div>
+      ${narrativeHtml}
+    </div>
+
+    <!-- Footer -->
+    <div style="margin:0 48px;padding:14px 0;border-top:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:10px;color:#d1d5db;">Brianna · Fleet Spend Management · Brim Financial × MPC Hacks 2026</div>
+      <div style="font-size:10px;color:#d1d5db;">Confidential</div>
+    </div>
   </body></html>`
 
   const w = window.open('', '_blank')

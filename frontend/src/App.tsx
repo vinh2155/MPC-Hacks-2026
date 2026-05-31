@@ -12,12 +12,12 @@ import EmployeeRequestPage from './pages/EmployeeRequestPage'
 type ManagerTab = 'budget' | 'chat' | 'policy' | 'approvals' | 'reports' | 'transactions'
 
 const MANAGER_TABS: { id: ManagerTab; label: string }[] = [
-  { id: 'budget', label: 'Budget Tracker' },
   { id: 'chat', label: 'Chat' },
   { id: 'transactions', label: 'Transactions' },
   { id: 'policy', label: 'Policy' },
   { id: 'approvals', label: 'Approvals Inbox' },
   { id: 'reports', label: 'Reports' },
+  { id: 'budget', label: 'Budget Tracker' },
 ]
 
 function usePendingCount() {
@@ -88,7 +88,7 @@ function ManagerView({ activeTab, setActiveTab }: {
 
 function AppShell() {
   const { role, toggleRole } = useRole()
-  const [activeTab, setActiveTab] = useState<ManagerTab>('budget')
+  const [activeTab, setActiveTab] = useState<ManagerTab>('chat')
 
   return (
     <div className="min-h-screen bg-gray-50">
