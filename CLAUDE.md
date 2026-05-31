@@ -95,6 +95,8 @@ Import: `import { DatabaseSync } from 'node:sqlite'`. Synchronous API — no asy
 - **Vite proxy**: all `/api/*` requests forwarded to `http://localhost:3001`. The Vite proxy handles CORS in dev; `cors()` middleware is also configured globally on the backend for production.
 - **Tab rendering**: `App.tsx` renders most manager pages with `className={activeTab !== 'X' ? 'hidden' : ''}` — those pages are always mounted and any top-level `useEffect` fires immediately on app load, not when the tab is clicked. **Exception:** `ApprovalsPage` uses `{activeTab === 'approvals' && <ApprovalsPage />}` (conditional render, not hidden) to prevent eager Claude API calls at startup. Use conditional render (not hidden) for any page that fires Claude calls on mount.
 - **Recharts**: already installed; `BudgetGauge.tsx` uses `PieChart` with `Pie`, `Cell`, `Tooltip`, `Legend`, `ResponsiveContainer`.
+- **AbortController for fetch cleanup**: any component that fires a fetch on mount and can unmount before it resolves (e.g. role switch, tab conditional-render) must use `AbortController` with a `useEffect` cleanup. Catch `AbortError` silently (`if ((err as Error).name === 'AbortError') return`). See `ReportsPage.tsx` for the pattern.
+- **`inFlight` ref guard**: use `const inFlight = useRef(false)` to synchronously block concurrent calls from rapid double-clicks before React commits the `disabled` state. Set to `true` at the start of the async function, reset to `false` in `finally`. Used in `ReportsPage.tsx` and `ApprovalsPage.tsx`.
 
 ### Security
 
@@ -147,22 +149,22 @@ frontend/src/
 
 All routes are implemented.
 
-| | Method | Path | Description |
-|-|--------|------|-------------|
-| ✓ | GET | `/api/health` | Health check |
-| ✓ | GET | `/api/budget/summary` | Total spend, budget, utilization %, by-category |
-| ✓ | GET | `/api/debug/transactions` | `?limit=N` — dev only |
-| ✓ | POST | `/api/chat` | 4-step AI chain: `{ message, history }` — history capped to last 10 messages server-side |
-| ✓ | POST | `/api/compliance/scan` | SQL-only scan (pre-auth + split-charge), returns violations array |
-| ✓ | GET | `/api/compliance/score` | `{ score, totalTransactions, violationCount }` |
-| ✓ | POST | `/api/requests` | Submit employee request, returns `{ id }` |
-| ✓ | GET | `/api/requests` | All requests, newest first |
-| ✓ | GET | `/api/requests/:id` | Single request |
-| ✓ | PATCH | `/api/requests/:id` | Update status to approved/denied |
-| ✓ | POST | `/api/requests/:id/recommendation` | Claude approve/deny/escalate with reasoning; includes employee 30-day spend + budget context |
-| ✓ | POST | `/api/reports/period` | `{ period: "weekly"\|"monthly" }` → exec memo |
-| ✓ | POST | `/api/reports/employee` | `{ employeeName }` → spend profile |
-| ✓ | GET | `/api/employees` | List of 8 employee names |
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/health` | Health check |
+| GET | `/api/budget/summary` | Total spend, budget, utilization %, by-category |
+| GET | `/api/debug/transactions` | `?limit=N` — dev only |
+| POST | `/api/chat` | 4-step AI chain: `{ message, history }` — history capped to last 10 messages server-side |
+| POST | `/api/compliance/scan` | SQL-only scan (pre-auth + split-charge), returns violations array |
+| GET | `/api/compliance/score` | `{ score, totalTransactions, violationCount }` |
+| POST | `/api/requests` | Submit employee request, returns `{ id }` |
+| GET | `/api/requests` | All requests, newest first |
+| GET | `/api/requests/:id` | Single request |
+| PATCH | `/api/requests/:id` | Update status to approved/denied |
+| POST | `/api/requests/:id/recommendation` | Claude approve/deny/escalate with reasoning; includes employee 30-day spend + budget context |
+| POST | `/api/reports/period` | `{ period: "weekly"\|"monthly" }` → exec memo |
+| POST | `/api/reports/employee` | `{ employeeName }` → spend profile |
+| GET | `/api/employees` | List of 8 employee names |
 
 ## Key Decisions
 
