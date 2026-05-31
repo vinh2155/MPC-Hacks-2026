@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { RoleProvider, useRole } from './context/RoleContext'
 import { BudgetProvider } from './context/BudgetContext'
-import { ComplianceProvider } from './context/ComplianceContext'
 import BudgetPage from './pages/BudgetPage'
 import ChatPage from './pages/ChatPage'
 import PolicyPage from './pages/PolicyPage'
@@ -9,7 +8,6 @@ import ApprovalsPage from './pages/ApprovalsPage'
 import ReportsPage from './pages/ReportsPage'
 import TransactionsPage from './pages/TransactionsPage'
 import RankingsPage from './pages/RankingsPage'
-import CompliancePage from './pages/CompliancePage'
 import EmployeeRequestPage from './pages/EmployeeRequestPage'
 import SidebarNav from './components/SidebarNav'
 import BottomNav from './components/BottomNav'
@@ -40,7 +38,7 @@ function usePendingCount() {
 
 function AppShell() {
   const { role, toggleRole } = useRole()
-  const [activeTab, setActiveTab] = useState<ManagerTab>('budget')
+  const [activeTab, setActiveTab] = useState<ManagerTab>('chat')
   const { count: pendingCount, refetch: refetchPending } = usePendingCount()
 
   return (
@@ -56,12 +54,11 @@ function AppShell() {
 
       {role === 'manager' ? (
         <div className="lg:ml-[220px] pb-14 lg:pb-0 min-h-screen">
-          <div className={activeTab !== 'budget' ? 'hidden' : ''}><BudgetPage /></div>
           <div className={activeTab !== 'chat' ? 'hidden' : ''}><ChatPage /></div>
           <div className={activeTab !== 'transactions' ? 'hidden' : ''}><TransactionsPage /></div>
-          <div className={activeTab !== 'compliance' ? 'hidden' : ''}><CompliancePage /></div>
           <div className={activeTab !== 'policy' ? 'hidden' : ''}><PolicyPage /></div>
           <div className={activeTab !== 'reports' ? 'hidden' : ''}><ReportsPage /></div>
+          <div className={activeTab !== 'budget' ? 'hidden' : ''}><BudgetPage /></div>
           <div className={activeTab !== 'rankings' ? 'hidden' : ''}><RankingsPage /></div>
           {activeTab === 'approvals' && <ApprovalsPage onDecide={refetchPending} />}
         </div>
@@ -114,9 +111,7 @@ export default function App() {
   return (
     <RoleProvider>
       <BudgetProvider>
-        <ComplianceProvider>
-          <AppShell />
-        </ComplianceProvider>
+        <AppShell />
       </BudgetProvider>
     </RoleProvider>
   )

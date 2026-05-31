@@ -112,7 +112,7 @@ All features (#1–#22) are implemented. Files listed below reflect current stat
 
 ```
 backend/src/
-  index.ts              — Express entry; mounts /api/budget, /api/chat, /api/compliance, /api/policy, /api/requests, /api/reports, /api/employees, /api/transactions, /api/health, /api/debug/transactions
+  index.ts              — Express entry; mounts /api/budget, /api/chat, /api/compliance, /api/policy, /api/requests, /api/reports, /api/employees, /api/transactions, /api/rankings, /api/health, /api/debug/transactions
                           Add new routers here as routes/ files are created
   db/index.ts           — SQLite init, loads xlsx, exports db instance
   lib/claude.ts         — askClaude<T> wrapper with Zod + retry
@@ -126,6 +126,7 @@ backend/src/
     requests.ts         — POST /api/requests, GET /api/requests, GET /api/requests/:id, PATCH /api/requests/:id (status update), POST /api/requests/:id/recommendation (Claude approve/deny/escalate)
     reports.ts          — POST /api/reports/period (SQL gathers 6 data points, Claude generates 6-section exec memo; returns { period, generatedAt, narrative, data }); POST /api/reports/employee (all-time spend profile vs team avg of 8, Claude narrative, compliance window last 30 days)
     employees.ts        — GET /api/employees (DISTINCT employee_name from transactions, sorted)
+    rankings.ts         — GET /api/rankings?period= (per-employee scores with normalization); POST /api/rankings/insights (Claude one-sentence insight per employee)
 
 frontend/src/
   main.tsx
@@ -143,7 +144,8 @@ frontend/src/
     ApprovalsPage.tsx       — pending requests with auto-fetched AI recommendation chips (approve/deny/escalate), budget impact per card, Approve/Deny buttons; resolved section below
     ReportsPage.tsx         — segmented control (Period/Employee); period: weekly/monthly selector → POST /api/reports/period; employee: dropdown from GET /api/employees → POST /api/reports/employee; stats strip + narrative; Download JSON (filename: brianna-report-{type}-{date}.json)
     TransactionsPage.tsx    — paginated transaction table; filters: search, employee, category, date preset, debit-only, violations-only; sortable columns (posting_date, amount, employee_name, merchant_name, severity); violation severity badge with hover tooltip showing reasoning
-    PolicyPage.tsx          — editable spending limits (totalBudget, preauthThreshold, tip caps, split-charge window) + free-text compliance rules; saves to /api/policy; LimitRow uses local string state committed on blur to allow intermediate typing
+    PolicyPage.tsx          — editable spending limits (totalBudget, preauthThreshold, tip caps, split-charge window) + free-text compliance rules; saves to /api/policy; limits use inline `onChange` bound directly to state (note: a `LimitRow` helper is defined in the file but is dead code — not called)
+    RankingsPage.tsx        — Employee Rankings tab; period dropdown (day/month/3months/6months/year/all) fetches /api/rankings; sort dropdown (score desc/asc/alpha) is client-side; score letter grade + medal; AI insight callout per card auto-fetched from /api/rankings/insights after data loads
     EmployeeRequestPage.tsx — request form (employee name + item + amount + category + reason); pending/approved/denied status screen with 5s polling (implemented)
   components/
     BudgetGauge.tsx     — animated fill bar + category breakdown modal (pie chart inline, top-8 + Other grouping); consumes BudgetContext
@@ -172,6 +174,8 @@ All routes are implemented.
 | POST | `/api/reports/period` | `{ period: "weekly"\|"monthly" }` → exec memo |
 | POST | `/api/reports/employee` | `{ employeeName }` → spend profile |
 | GET | `/api/employees` | List of 8 employee names |
+| GET | `/api/rankings` | `?period=day\|month\|3months\|6months\|year\|all` → `{ period, teamAverageSpend, employees: [...{ name, score, rank, totalSpend, transactionCount, preauthViolations, splitPairCount, approvedRequests, deniedRequests }] }` |
+| POST | `/api/rankings/insights` | `{ period }` → `{ insights: { EmployeeName: "one sentence", ... } }` — one Claude call for all 8 employees |
 
 ## Key Decisions
 
@@ -193,3 +197,6 @@ All routes are implemented.
 - **`policy-rules.json` is the only persistent file** — all other state (transactions, requests) is in-memory. Policy limits (totalBudget, preauthThreshold, tip caps, split-charge window) and compliance rules are read from this file at scan time via `loadPolicyLimits()` / `loadPolicyRules()`. The module-level cache in `policy.ts` is busted on every `PUT`.
 - **React filter page-reset pattern** — when multiple filters and pagination coexist, do NOT use a separate `useEffect` to reset `page` to 1 on filter changes. The effect fires after the fetch effect, causing its `AbortController` cleanup to cancel the filtered request. Instead, call `setPage(1)` inline in each filter's `onChange` handler so all state batches into one render and one fetch. See `TransactionsPage.tsx`.
 - **Compliance severity is dynamic** — pre-auth severity scales with `amount / threshold` ratio (low/medium/high/critical); split-charge severity scales with combined total (<$200 medium, <$1000 high, ≥$1000 critical). Helpers `preauthSeverity` and `splitChargeSeverity` in `compliance.ts`.
+- **Employee rankings score normalization** — raw penalty = `preauthViolations * 4 + splitPairCount * 20 + deniedRequests * 10 + spendPenalty` (spendPenalty: +6 if >125% team avg, +12 if >150%, +20 if >200%). Penalties are then normalized so the best employee always maps to 95 and the worst to 40, regardless of absolute violation counts: `score = round(95 - (penalty - min) / (max - min) * 55)`. If all employees have equal penalties, everyone gets 67. Normalization is in `rankings.ts` `normalizeScores()`.
+- **Rankings insights — one call for all employees** — `POST /api/rankings/insights` fires a single Claude call with all 8 employees' data (spend, violations, top categories) and asks for one sentence per employee. Schema: `z.object({ insights: z.record(z.string()) })`. This avoids 8 separate API calls.
+- **Violation badge tooltip — fixed positioning** — `TransactionsPage.tsx` stores `{ x, y, v }` in `tooltip` state on `onMouseEnter` of the badge span (position from `getBoundingClientRect()`). The tooltip renders as `position: fixed` at end-of-component to escape all `overflow: hidden`/`overflow-x: auto` clipping in the table container. Never use `position: absolute` for tooltips inside scrollable tables.

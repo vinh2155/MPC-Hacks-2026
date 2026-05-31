@@ -1,4 +1,4 @@
-export type ManagerTab = 'budget' | 'chat' | 'policy' | 'approvals' | 'reports' | 'transactions' | 'compliance' | 'rankings'
+export type ManagerTab = 'chat' | 'transactions' | 'policy' | 'approvals' | 'reports' | 'budget' | 'rankings'
 
 export interface Request {
   id: string
